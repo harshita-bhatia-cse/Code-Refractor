@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<h2>Welcome <span id="user"></span></h2>
+
+<button onclick="goRepos()">View Repositories</button>
+
+<script src="js/auth.js"></script>
+<script>
+  // 1️⃣ Read token & user from URL (FIRST TIME ONLY)
+  const params = new URLSearchParams(window.location.search);
+  const tokenFromUrl = params.get("token");
+  const userFromUrl = params.get("user");
+
+  // 2️⃣ If coming from GitHub callback, SAVE to localStorage
+  if (tokenFromUrl && userFromUrl) {
+    localStorage.setItem("jwt_token", tokenFromUrl);
+    localStorage.setItem("github_user", userFromUrl);
+
+    // Clean URL (remove token from address bar)
+    window.history.replaceState({}, document.title, "dashboard.html");
+  }
+
+  // 3️⃣ Now read from localStorage
+  const token = localStorage.getItem("jwt_token");
+  const user = localStorage.getItem("github_user");
+
+  if (!token || !user) {
+    alert("Login expired. Please login again.");
+    window.location.href = "index.html";
+  }
+
+  document.getElementById("user").innerText = user;
+
+  function goRepos() {
+    window.location.href = "repo.html";
+  }
+</script>
+
+
+
+</body>
+</html>
