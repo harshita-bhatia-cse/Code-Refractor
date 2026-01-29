@@ -1,21 +1,22 @@
 // frontend/js/auth.js
 
-function getToken() {
+export function requireAuth() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Save token on first redirect
+  if (params.get("token")) {
+    localStorage.setItem("jwt_token", params.get("token"));
+    localStorage.setItem("github_user", params.get("user"));
+
+    history.replaceState({}, "", location.pathname);
+  }
+
   const token = localStorage.getItem("jwt_token");
 
   if (!token) {
-    alert("Session expired. Please login again.");
     window.location.href = "index.html";
-    return null;
+    throw new Error("No auth token");
   }
 
   return token;
 }
-
-function authHeader() {
-  return {
-    "Authorization": "Bearer " + getToken(),
-    "Content-Type": "application/json"
-  };
-}
-  

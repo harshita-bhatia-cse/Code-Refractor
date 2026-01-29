@@ -1,35 +1,61 @@
 import requests
 
+
 class GitHubClient:
     def __init__(self, token: str):
-        self.base_url = "https://api.github.com"
         self.headers = {
             "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json"
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28"
         }
 
-    def list_repos(self):
-        """Fetch user repositories"""
-        url = f"{self.base_url}/user/repos"
-        res = requests.get(url, headers=self.headers)
+    # --------------------------------------------------
+    # Get user repositories
+    # --------------------------------------------------
+    def get_repositories(self, username: str):
+        url = f"https://api.github.com/users/{username}/repos"
 
-        if res.status_code != 200:
-            raise Exception(f"GitHub API error: {res.text}")
+        resp = requests.get(url, headers=self.headers)
 
-        return res.json()
+        if resp.status_code != 200:
+            raise Exception(f"GitHub API error: {resp.text}")
 
+        repos = resp.json()
+
+        return [
+            {
+                "name": repo["name"],
+                "private": repo["private"],
+                "url": repo["html_url"]
+            }
+            for repo in repos
+        ]
+
+    # --------------------------------------------------
+    # Get repository contents (files & folders)
+    # --------------------------------------------------
     def get_repo_contents(self, owner: str, repo: str, path: str = ""):
-        url = f"{self.base_url}/repos/{owner}/{repo}/contents/{path}"
-        res = requests.get(url, headers=self.headers)
-        return res.json()
+        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
 
+        resp = requests.get(url, headers=self.headers)
+
+        if resp.status_code != 200:
+            raise Exception(f"GitHub API error: {resp.text}")
+
+        return resp.json()
+
+    # --------------------------------------------------
+    # Get raw file content
+    # --------------------------------------------------
     def get_file_content(self, raw_url: str):
-        res = requests.get(raw_url, headers=self.headers)
+        resp = requests.get(raw_url, headers=self.headers)
 
-        if res.status_code != 200:
-            return {"error": True, "message": "Unable to fetch file"}
+        if resp.status_code != 200:
+            return {
+                "error": True,
+                "message": "Unable to fetch file content"
+            }
 
         return {
-            "error": False,
-            "content": res.text
+            "content": resp.text
         }

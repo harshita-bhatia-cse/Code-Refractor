@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=".env")
+
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,3 +28,11 @@ app.include_router(repos_router)
 app.include_router(files_router)
 app.include_router(code_router)
 app.include_router(profile_router)
+
+
+from backend.api.routes import analyze
+app.include_router(analyze.router)
+
+# from backend.api.routes import agent
+
+# app.include_router(agent.router)

@@ -1,104 +1,75 @@
-// // frontend/js/files.js
+import API_BASE from "./config.js";
+import { requireAuth } from "./auth.js";
 
-// // 1️⃣ Get repo name (from localStorage FIRST)
-// let repo = localStorage.getItem("selected_repo");
-
-// // Optional fallback (future-proof)
-// if (!repo) {
-//   const params = new URLSearchParams(window.location.search);
-//   repo = params.get("repo");
-// }
-
-// // 2️⃣ If still not found → go back to repo list
-// if (!repo) {
-//   alert("Repository not selected");
-//   window.location.href = "repo.html";
-// }
-
-// // 3️⃣ Load files
-// async function loadFiles() {
-//   try {
-//     const res = await fetch(
-//       `http://127.0.0.1:8000/files/${encodeURIComponent(repo)}`,
-//       {
-//         headers: authHeader()
-//       }
-//     );
-
-//     if (!res.ok) {
-//       throw new Error("Failed to fetch files");
-//     }
-
-//     const files = await res.json();
-//     const ul = document.getElementById("fileList");
-//     ul.innerHTML = "";
-
-//     files.forEach(file => {
-//       const li = document.createElement("li");
-//       li.innerHTML = `
-//         <a href="code.html?url=${encodeURIComponent(file.url)}">
-//           ${file.name}
-//         </a>
-//       `;
-//       ul.appendChild(li);
-//     });
-
-//   } catch (err) {
-//     console.error(err);
-//     alert("Session expired. Please login again.");
-//     localStorage.clear();
-//     window.location.href = "index.html";
-//   }
-// }
-
-// // 4️⃣ Call loader
-// loadFiles();
-
-// frontend/js/files.js
-
-// 1️⃣ Get repo ONLY from localStorage (this is your design)
 const repo = localStorage.getItem("selected_repo");
+const token = requireAuth();
+const fileList = document.getElementById("fileList");
+
+let currentPath = "";
 
 if (!repo) {
   alert("Repository not selected");
   window.location.href = "repo.html";
 }
 
-// 2️⃣ Load files
+// 🔥 Load files (folders + files)
 async function loadFiles() {
   try {
-    const res = await fetch(
-      `http://127.0.0.1:8000/files/${encodeURIComponent(repo)}`,
-      {
-        headers: authHeader()
-      }
-    );
+    const url = currentPath
+      ? `${API_BASE}/files/${encodeURIComponent(repo)}?path=${encodeURIComponent(currentPath)}`
+      : `${API_BASE}/files/${encodeURIComponent(repo)}`;
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch files");
-    }
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Failed to fetch files");
 
     const files = await res.json();
-    const ul = document.getElementById("fileList");
-    ul.innerHTML = "";
+    fileList.innerHTML = "";
 
-    files.forEach(file => {
+    // 🔙 Back button
+    if (currentPath) {
+      const back = document.createElement("li");
+      back.textContent = "🔙 Back";
+      back.style.cursor = "pointer";
+      back.onclick = () => {
+        currentPath = currentPath.split("/").slice(0, -1).join("/");
+        loadFiles();
+      };
+      fileList.appendChild(back);
+    }
+
+    files.forEach(item => {
       const li = document.createElement("li");
-      li.innerHTML = `
-        <a href="code.html?url=${encodeURIComponent(file.url)}">
-          ${file.name}
-        </a>
-      `;
-      ul.appendChild(li);
+
+      if (item.type === "dir") {
+        li.textContent = `📁 ${item.name}`;
+        li.style.cursor = "pointer";
+        li.onclick = () => {
+          currentPath = currentPath
+            ? `${currentPath}/${item.name}`
+            : item.name;
+          loadFiles();
+        };
+      } else {
+        li.innerHTML = `
+          📄 <a href="code.html?raw_url=${encodeURIComponent(item.raw_url)}">
+            ${item.name}
+          </a>
+        `;
+      }
+
+      fileList.appendChild(li);
     });
 
   } catch (err) {
     console.error(err);
-    alert("Session expired. Please login again.");
-    localStorage.clear();
-    window.location.href = "index.html";
+    fileList.innerHTML =
+      "<li style='color:red'>Failed to load files</li>";
   }
 }
 
-// 3️⃣ Run
 loadFiles();
