@@ -14,3 +14,9 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+
+# ignore old / legacy agents
+backend/ai_agents/metrics_agent.py
+backend/ai_agents/style_agent.py
+backend/ai_agents/refactor_agent.py
