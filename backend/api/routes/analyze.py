@@ -5,12 +5,13 @@ from backend.ai_agents.orchestrator import OrchestratorAgent
 
 router = APIRouter(prefix="/analyze", tags=["AI Analysis"])
 
+
 @router.get("/")
 def analyze(
     raw_url: str = Query(...),
     user=Depends(verify_token)
 ):
-    # 🚫 block placeholders & bad inputs
+    # 🚫 Block placeholders
     if any(x in raw_url for x in ["<", "REPO_NAME", "branch", "path-to-file"]):
         raise HTTPException(
             status_code=400,
@@ -23,5 +24,8 @@ def analyze(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    code = resp.text
+    filename = raw_url.split("/")[-1]  # 🔥 critical
+
     agent = OrchestratorAgent()
-    return agent.analyze(resp.text)
+    return agent.analyze(code, filename)

@@ -1,14 +1,16 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Body
 from backend.api.auth.jwt_manager import create_access_token
 
 router = APIRouter(prefix="/login", tags=["Auth"])
 
+
 @router.post("/")
-def login():
+def login(username: str = Body(...)):
     token = create_access_token(
-        user_id="harshita",
-        github_token="dummy_token_for_testing"
+        user_id=username,
+        github_token=None
     )
+
     return {
         "access_token": token,
         "token_type": "bearer"

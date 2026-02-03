@@ -33,6 +33,10 @@ app.include_router(profile_router)
 from backend.api.routes import analyze
 app.include_router(analyze.router)
 
+from backend.api.routes import repo_analyze
+app.include_router(repo_analyze.router)
+
+
 # from backend.api.routes import agent
 
 # app.include_router(agent.router)
