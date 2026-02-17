@@ -1,0 +1,73 @@
+{
+  "projectName": "Code Refactoring Analysis",
+  "overview": {
+    "totalFiles": 38,
+    "locBefore": 28420,
+    "locAfter": 22115,
+    "successRate": 94
+  },
+  "complexityTrend": [
+    { "date": "Week 1", "complexityBefore": 82, "complexityAfter": 76 },
+    { "date": "Week 2", "complexityBefore": 79, "complexityAfter": 68 },
+    { "date": "Week 3", "complexityBefore": 75, "complexityAfter": 61 },
+    { "date": "Week 4", "complexityBefore": 72, "complexityAfter": 54 },
+    { "date": "Week 5", "complexityBefore": 69, "complexityAfter": 48 }
+  ],
+  "duplicateCodeTrend": [
+    { "module": "Auth", "before": 33, "after": 16 },
+    { "module": "Payments", "before": 27, "after": 13 },
+    { "module": "Profile", "before": 19, "after": 10 },
+    { "module": "Reporting", "before": 41, "after": 18 },
+    { "module": "Notifications", "before": 24, "after": 11 }
+  ],
+  "beforeAfter": {
+    "complexityBefore": 82,
+    "complexityAfter": 48,
+    "locBefore": 28420,
+    "locAfter": 22115,
+    "beforeCode": "function getUserData(user, source) {\n  if (source === 'db') {\n    if (user && user.id) {\n      return db.find(user.id);\n    }\n  }\n  if (source === 'cache') {\n    if (user && user.id) {\n      return cache.fetch(user.id);\n    }\n  }\n  return null;\n}",
+    "afterCode": "function getUserData(user, source) {\n  if (!user?.id) return null;\n\n  const fetcher = {\n    db: db.find,\n    cache: cache.fetch,\n  }[source];\n\n  return fetcher ? fetcher(user.id) : null;\n}"
+  },
+  "reports": [
+    {
+      "fileName": "src/services/userService.ts",
+      "issuesFixed": 7,
+      "complexityBefore": 19,
+      "complexityAfter": 11,
+      "locBefore": 430,
+      "locAfter": 318
+    },
+    {
+      "fileName": "src/components/CheckoutFlow.jsx",
+      "issuesFixed": 11,
+      "complexityBefore": 27,
+      "complexityAfter": 14,
+      "locBefore": 680,
+      "locAfter": 452
+    },
+    {
+      "fileName": "src/utils/parser.ts",
+      "issuesFixed": 6,
+      "complexityBefore": 15,
+      "complexityAfter": 8,
+      "locBefore": 290,
+      "locAfter": 204
+    },
+    {
+      "fileName": "src/modules/reporting/aggregation.js",
+      "issuesFixed": 9,
+      "complexityBefore": 24,
+      "complexityAfter": 13,
+      "locBefore": 510,
+      "locAfter": 376
+    },
+    {
+      "fileName": "src/hooks/useRefactorScanner.ts",
+      "issuesFixed": 5,
+      "complexityBefore": 13,
+      "complexityAfter": 7,
+      "locBefore": 248,
+      "locAfter": 196
+    }
+  ]
+}
