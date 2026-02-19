@@ -25,7 +25,10 @@ def analyze(
         raise HTTPException(status_code=400, detail=str(e))
 
     code = resp.text
-    filename = raw_url.split("/")[-1]  # 🔥 critical
+    filename = raw_url.split("/")[-1]
 
     agent = OrchestratorAgent()
-    return agent.analyze(code, filename)
+
+    result = agent.analyze(code, filename)
+
+    return result

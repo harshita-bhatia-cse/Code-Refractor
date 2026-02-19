@@ -3,7 +3,9 @@ import { requireAuth } from "./auth.js";
 
 const repo = localStorage.getItem("selected_repo");
 const token = requireAuth();
+
 const fileList = document.getElementById("fileList");
+const llmBox = document.getElementById("llmBox");
 
 let currentPath = "";
 
@@ -12,7 +14,9 @@ if (!repo) {
   window.location.href = "repo.html";
 }
 
-// 🔥 Load files (folders + files)
+// ==========================================
+// 📂 LOAD FILES (folders + files)
+// ==========================================
 async function loadFiles() {
   try {
     const url = currentPath
@@ -72,4 +76,57 @@ async function loadFiles() {
   }
 }
 
+// ==========================================
+// 🤖 RUN LLM REPO ANALYSIS
+// ==========================================
+async function analyzeRepo() {
+  try {
+    llmBox.innerHTML = "<p>Running AI analysis...</p>";
+
+    const response = await fetch(
+      `${API_BASE}/analyze-repo/?repo_path=${encodeURIComponent(repo)}`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(txt);
+    }
+
+    const data = await response.json();
+    const ai = data.result.ai_analysis;
+
+    llmBox.innerHTML = `
+      <h3>🤖 AI Repository Analysis</h3>
+      <p><b>Maintainability Score:</b> ${ai.maintainability_score}</p>
+      <p><b>Complexity Level:</b> ${ai.complexity_level}</p>
+      <p><b>Architecture Type:</b> ${ai.architecture_type}</p>
+
+      <p><b>Strengths:</b></p>
+      <ul>${ai.strengths.map(s => `<li>${s}</li>`).join("")}</ul>
+
+      <p><b>Weaknesses:</b></p>
+      <ul>${ai.weaknesses.map(w => `<li>${w}</li>`).join("")}</ul>
+
+      <p><b>Recommendations:</b></p>
+      <ul>${ai.recommendations.map(r => `<li>${r}</li>`).join("")}</ul>
+    `;
+
+  } catch (err) {
+    console.error("AI Analysis failed:", err);
+    llmBox.innerHTML =
+      "<p style='color:red'>AI analysis failed.</p>";
+  }
+}
+
+// ==========================================
+// 🚀 INIT
+// ==========================================
 loadFiles();
+analyzeRepo();

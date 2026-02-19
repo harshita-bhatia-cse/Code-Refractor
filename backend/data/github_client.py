@@ -59,3 +59,29 @@ class GitHubClient:
         return {
             "content": resp.text
         }
+        # --------------------------------------------------
+    # Download full repository as ZIP
+    # --------------------------------------------------
+    def download_repo(self, owner: str, repo: str, save_path: str):
+
+        import os
+        import zipfile
+
+        url = f"https://api.github.com/repos/{owner}/{repo}/zipball"
+
+        response = requests.get(url, headers=self.headers)
+
+        if response.status_code != 200:
+            raise Exception(f"Failed to download repo: {response.text}")
+
+        zip_path = os.path.join(save_path, "repo.zip")
+
+        # Save zip file
+        with open(zip_path, "wb") as f:
+            f.write(response.content)
+
+        # Extract zip
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(save_path)
+
+

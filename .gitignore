@@ -1,19 +1,58 @@
-# Virtual environment
-venv/
-.env/
+# -----------------------------
+# 🔐 Environment Variables
+# -----------------------------
+.env
+backend/.env
 
-# Python cache
+# -----------------------------
+# 🐍 Virtual Environment
+# -----------------------------
+venv/
+.venv/
+env/
+
+# -----------------------------
+# 🧠 Python Cache
+# -----------------------------
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.sqlite3
 
-# Analysis outputs (DO NOT COMMIT)
+# -----------------------------
+# 📊 Analysis Output (Your AI metrics)
+# -----------------------------
 backend/analysis_output/
 analysis_output/
 
-# OS / Editor
+# -----------------------------
+# 📁 Logs
+# -----------------------------
+*.log
+logs/
+
+# -----------------------------
+# 🖥 OS Files
+# -----------------------------
 .DS_Store
+Thumbs.db
+
+# -----------------------------
+# 💻 Editors / IDE
+# -----------------------------
 .vscode/
 .idea/
 
-# Logs
-*.log
+# -----------------------------
+# 📦 Build / Distribution
+# -----------------------------
+build/
+dist/
+*.egg-info/
+
+# -----------------------------
+# 📄 Temporary / Notes
+# -----------------------------
+explaination.txt
+*.txt

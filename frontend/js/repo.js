@@ -4,7 +4,6 @@ import { requireAuth } from "./auth.js";
 const token = requireAuth();
 const repoList = document.getElementById("repoList");
 
-// DEBUG: confirm token
 console.log("JWT Token:", token);
 
 async function loadRepos() {
@@ -14,8 +13,6 @@ async function loadRepos() {
         Authorization: `Bearer ${token}`
       }
     });
-
-    console.log("Repos response status:", res.status);
 
     if (res.status === 401) {
       throw new Error("UNAUTHORIZED");
@@ -59,7 +56,7 @@ async function loadRepos() {
 
 window.openRepo = repo => {
   localStorage.setItem("selected_repo", repo);
-  window.location.href = "files.html";
+  window.location.href = "files.html";   // go to repo page
 };
 
 loadRepos();
