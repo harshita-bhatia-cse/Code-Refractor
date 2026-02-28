@@ -36,6 +36,8 @@ app.include_router(analyze.router)
 from backend.api.routes import repo_analyze
 app.include_router(repo_analyze.router)
 
+from backend.api.routes import refactor
+app.include_router(refactor.router)
 
 # from backend.api.routes import agent
 
