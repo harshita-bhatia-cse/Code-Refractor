@@ -4,6 +4,7 @@ import urllib.parse
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
+from pathlib import Path
 from dotenv import load_dotenv
 
 from backend.api.auth.jwt_manager import create_token
@@ -11,7 +12,7 @@ from backend.api.auth.jwt_manager import create_token
 # --------------------------------------------------
 # Load environment variables
 # --------------------------------------------------
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 
 router = APIRouter(prefix="/auth/github", tags=["GitHub Auth"])
 
@@ -106,3 +107,4 @@ def github_callback(code: str):
 
     redirect_url = f"{FRONTEND_URL}/dashboard.html?{query_params}"
     return RedirectResponse(url=redirect_url)
+

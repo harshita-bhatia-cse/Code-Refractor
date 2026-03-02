@@ -1,0 +1,79 @@
+
+JWT Verified
+   ↓
+OrchestratorAgent.run()
+   ↓
+Engine → rule metrics
+   ↓
+AIReasoningAgent → LLM reasoning
+   ↓
+Merge
+   ↓
+Save repo_metrics.json
+   ↓
+Return structured response
+
+
+
+
+STYLE ANALYSIS
+
+User opens repo
+        ↓
+Rule Engine calculates metrics
+        ↓
+Create summary context
+        ↓
+Send metrics + summary to LLM
+        ↓
+LLM returns structured analysis
+        ↓
+Merge rule metrics + AI insights
+        ↓
+Save to repo_metrics.json
+
+
+GitHub Repo
+     ↓
+Engine (rule metrics)
+     ↓
+MetricsAggregator
+     ↓
+AI Reasoning Layer (LLM)
+     ↓
+Structured JSON Output
+     ↓
+Stored in repo_metrics.json
+
+
+Why Groq Is Good
+
+✔ Extremely fast
+✔ Cheaper than OpenAI
+✔ Great Llama3 models
+✔ Works perfectly with LangChain
+✔ No NumPy issues
+
+Engine.run(repo_path)
+        ↓
+rule_metrics
+        ↓
+AIReasoningAgent.analyze(rule_metrics)
+        ↓
+ai_analysis
+
+
+User clicks repo
+        ↓
+Frontend calls POST /analyze-repo?repo_path=repo_name
+        ↓
+Backend runs:
+    - Metrics engine
+    - AIReasoningAgent (LLM)
+        ↓
+Frontend shows:
+    - maintainability_score
+    - complexity_level
+    - strengths
+    - weaknesses
+    - recommendations

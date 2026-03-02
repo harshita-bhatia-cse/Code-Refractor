@@ -3,10 +3,11 @@ import jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pathlib import Path
 from dotenv import load_dotenv
 
-# 🔥 FORCE load .env
-load_dotenv()
+# Force load backend/.env
+load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 
 SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
@@ -25,7 +26,7 @@ def create_token(user: str, github_token: str):
 
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-    print("🔐 JWT CREATED with secret:", SECRET_KEY[:5], "...")
+    print("JWT created for user:", user)
 
     return token
 
@@ -41,7 +42,7 @@ def verify_token(
             algorithms=[ALGORITHM]
         )
 
-        print("✅ JWT VERIFIED for user:", payload.get("sub"))
+        print("JWT verified for user:", payload.get("sub"))
 
         return payload
 
@@ -49,5 +50,6 @@ def verify_token(
         raise HTTPException(status_code=401, detail="Token expired")
 
     except jwt.InvalidTokenError as e:
-        print("❌ JWT VERIFY FAILED:", str(e))
+        print("JWT verify failed:", str(e))
         raise HTTPException(status_code=401, detail="Invalid token")
+

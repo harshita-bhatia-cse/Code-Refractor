@@ -1,6 +1,6 @@
+from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env")
-
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,3 +42,4 @@ app.include_router(refactor.router)
 # from backend.api.routes import agent
 
 # app.include_router(agent.router)
+

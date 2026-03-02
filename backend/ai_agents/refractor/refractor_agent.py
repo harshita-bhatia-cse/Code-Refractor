@@ -16,6 +16,11 @@ class LLMRefractorAgent(BaseRefractor):
         self.base_url = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         self.timeout_seconds = int(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
         self.max_output_tokens = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "4096"))
+        self.enforce_json_response = os.getenv("LLM_ENFORCE_JSON_RESPONSE", "1").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }
 
     def refactor(self, code: str, filename: str, analysis: dict | None = None) -> dict:
         language = detect_language(filename)
@@ -49,13 +54,15 @@ class LLMRefractorAgent(BaseRefractor):
 
         payload = {
             "model": self.model,
-            "temperature": 0.2,
+            "temperature": 0,
             "max_tokens": self.max_output_tokens,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
         }
+        if self.enforce_json_response:
+            payload["response_format"] = {"type": "json_object"}
 
         try:
             response = requests.post(
@@ -68,6 +75,42 @@ class LLMRefractorAgent(BaseRefractor):
                 timeout=self.timeout_seconds,
             )
             response.raise_for_status()
+        except requests.HTTPError as exc:
+            # Some providers/models reject response_format; retry once without it.
+            status_code = exc.response.status_code if exc.response is not None else None
+            if "response_format" in payload and status_code in {400, 422}:
+                payload.pop("response_format", None)
+                try:
+                    response = requests.post(
+                        f"{self.base_url}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json=payload,
+                        timeout=self.timeout_seconds,
+                    )
+                    response.raise_for_status()
+                except Exception as retry_exc:
+                    return {
+                        "ok": False,
+                        "language": language,
+                        "filename": filename,
+                        "error": f"LLM request failed: {retry_exc}",
+                        "summary": "Failed to call LLM service.",
+                        "issues": [],
+                        "refactored_code": code,
+                    }
+            else:
+                return {
+                    "ok": False,
+                    "language": language,
+                    "filename": filename,
+                    "error": f"LLM request failed: {exc}",
+                    "summary": "Failed to call LLM service.",
+                    "issues": [],
+                    "refactored_code": code,
+                }
         except Exception as exc:
             return {
                 "ok": False,
@@ -153,10 +196,9 @@ class LLMRefractorAgent(BaseRefractor):
     @staticmethod
     def _build_system_prompt(language: str) -> str:
         base = (
-            "You are a senior code reviewer and refactoring engineer. "
-            "Improve readability, naming, structure, and maintainability while preserving behavior. "
-            "Return JSON only with keys: summary (string), issues (array of strings), refactored_code (string). "
-            "Do not include markdown fences. "
+            "Refactor code for readability and maintainability while preserving behavior. "
+            "Return valid JSON only (no prose, no markdown) with keys: "
+            "summary (string), issues (array of strings), refactored_code (string). "
         )
 
         if language == "json":
