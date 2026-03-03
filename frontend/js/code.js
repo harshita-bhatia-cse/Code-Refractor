@@ -1,5 +1,5 @@
-import API_BASE from "./config.js";
-import { requireAuth } from "./auth.js";
+import API_BASE from "./config.js?v=20260301g";
+import { requireAuth } from "./auth.js?v=20260301g";
 
 const codeBox = document.getElementById("codeBox");
 const analysisBox = document.getElementById("analysisBox");

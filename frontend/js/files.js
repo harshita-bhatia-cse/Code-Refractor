@@ -1,7 +1,7 @@
-import API_BASE from "./config.js";
-import { requireAuth } from "./auth.js";
+import API_BASE from "./config.js?v=20260301g";
+import { requireAuth } from "./auth.js?v=20260301g";
 
-const repo = localStorage.getItem("selected_repo");
+const repo = localStorage.getItem("selected_repo") || sessionStorage.getItem("selected_repo");
 const token = requireAuth();
 const fileList = document.getElementById("fileList");
 
@@ -55,8 +55,11 @@ async function loadFiles() {
           loadFiles();
         };
       } else {
+        const qs = new URLSearchParams({
+          raw_url: item.raw_url
+        });
         li.innerHTML = `
-          📄 <a href="code.html?raw_url=${encodeURIComponent(item.raw_url)}">
+          📄 <a href="code.html?${qs.toString()}">
             ${item.name}
           </a>
         `;

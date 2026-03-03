@@ -7,28 +7,43 @@
 <body>
 
 <h2>Welcome <span id="user"></span></h2>
+<div id="buildTag" style="font-size:12px;color:#666;">build: 20260301b</div>
 
-<button onclick="goRepos()">View Repositories</button>
+<button id="reposBtn" onclick="goRepos()" disabled>View Repositories</button>
 
 <script>
   const params = new URLSearchParams(window.location.search);
 
   if (params.get("token")) {
-    localStorage.setItem("jwt_token", params.get("token"));
-    localStorage.setItem("github_user", params.get("user"));
+    const token = params.get("token");
+    const user = params.get("user");
+    sessionStorage.setItem("jwt_token", token);
+    sessionStorage.setItem("github_user", user || "");
+    localStorage.setItem("jwt_token", token);
+    localStorage.setItem("github_user", user || "");
     history.replaceState({}, "", "dashboard.html");
   }
 
-  const token = localStorage.getItem("jwt_token");
-  const user = localStorage.getItem("github_user");
+  const activeToken = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
+  const activeUser = localStorage.getItem("github_user") || sessionStorage.getItem("github_user");
 
-  if (!token || !user) {
+  if (!activeToken || !activeUser) {
     window.location.href = "index.html";
+  } else {
+    sessionStorage.setItem("jwt_token", activeToken);
+    sessionStorage.setItem("github_user", activeUser);
+    localStorage.setItem("jwt_token", activeToken);
+    localStorage.setItem("github_user", activeUser);
+    document.getElementById("user").innerText = activeUser;
+    document.getElementById("reposBtn").disabled = false;
   }
 
-  document.getElementById("user").innerText = user;
-
   function goRepos() {
+    const token = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
+    if (!token) {
+      window.location.href = "index.html";
+      return;
+    }
     window.location.href = "repo.html";
   }
 </script>

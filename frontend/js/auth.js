@@ -5,13 +5,26 @@ export function requireAuth() {
 
   // Save token on first redirect
   if (params.get("token")) {
-    localStorage.setItem("jwt_token", params.get("token"));
-    localStorage.setItem("github_user", params.get("user"));
+    const token = params.get("token");
+    const user = params.get("user");
+    sessionStorage.setItem("jwt_token", token);
+    sessionStorage.setItem("github_user", user || "");
+    localStorage.setItem("jwt_token", token);
+    localStorage.setItem("github_user", user || "");
 
     history.replaceState({}, "", location.pathname);
   }
 
-  const token = localStorage.getItem("jwt_token");
+  const token = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
+  const user = localStorage.getItem("github_user") || sessionStorage.getItem("github_user");
+  if (token) {
+    sessionStorage.setItem("jwt_token", token);
+    localStorage.setItem("jwt_token", token);
+  }
+  if (user) {
+    sessionStorage.setItem("github_user", user);
+    localStorage.setItem("github_user", user);
+  }
 
   if (!token) {
     window.location.href = "index.html";

@@ -1,5 +1,5 @@
-import API from "./config.js";
-import { requireAuth } from "./auth.js";
+import API from "./config.js?v=20260301g";
+import { requireAuth } from "./auth.js?v=20260301g";
 
 const token = requireAuth();
 const repoList = document.getElementById("repoList");
@@ -48,7 +48,10 @@ async function loadRepos() {
     console.error("Repo load failed:", err);
 
     if (err.message === "UNAUTHORIZED") {
-      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.removeItem("jwt_token");
+      localStorage.removeItem("github_user");
+      localStorage.removeItem("selected_repo");
       window.location.href = "index.html";
     } else {
       repoList.innerHTML =
@@ -58,6 +61,7 @@ async function loadRepos() {
 }
 
 window.openRepo = repo => {
+  sessionStorage.setItem("selected_repo", repo);
   localStorage.setItem("selected_repo", repo);
   window.location.href = "files.html";
 };
