@@ -1,18 +1,29 @@
-import API from "./config.js?v=20260301g";
-import { requireAuth } from "./auth.js?v=20260301g";
+import API from "./config.js?v=20260304b";
+import { requireAuth } from "./auth.js?v=20260304b";
 
 const token = requireAuth();
 const repoList = document.getElementById("repoList");
+const repoStatus = document.getElementById("repoStatus");
 
-console.log("JWT Token:", token);
+function setStatus(text, color = "") {
+  if (!repoStatus) return;
+  repoStatus.textContent = text;
+  repoStatus.style.color = color;
+}
 
 async function loadRepos() {
   try {
+    setStatus("Loading repositories...");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     const res = await fetch(`${API}/repos/`, {
+      signal: controller.signal,
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
+    clearTimeout(timeout);
 
     if (res.status === 401) {
       throw new Error("UNAUTHORIZED");
@@ -28,9 +39,11 @@ async function loadRepos() {
     repoList.innerHTML = "";
 
     if (!Array.isArray(repos) || repos.length === 0) {
+      setStatus("No repositories found.");
       repoList.innerHTML = "<li>No repositories found</li>";
       return;
     }
+    setStatus(`Loaded ${repos.length} repositories.`);
 
     repos.forEach(repo => {
       const li = document.createElement("li");
@@ -43,14 +56,19 @@ async function loadRepos() {
 
   } catch (err) {
     console.error("Repo load failed:", err);
+    const msg = err && err.name === "AbortError"
+      ? "Repository request timed out after 15 seconds."
+      : "Failed to load repositories.";
 
     if (err.message === "UNAUTHORIZED") {
+      setStatus("Session expired. Redirecting to login...", "#b91c1c");
       sessionStorage.clear();
       localStorage.removeItem("jwt_token");
       localStorage.removeItem("github_user");
       localStorage.removeItem("selected_repo");
       window.location.href = "index.html";
     } else {
+      setStatus(msg, "#b91c1c");
       repoList.innerHTML =
         "<li style='color:red'>Failed to load repositories</li>";
     }

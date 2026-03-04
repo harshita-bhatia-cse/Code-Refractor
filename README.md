@@ -1,315 +1,71 @@
-# Code Refactorer (AI-Based)
+# Code-Refractor
 
-## Tech Stack
-- FastAPI (Backend)
-- Vanilla JS + HTML/CSS (Frontend)
-- GitHub OAuth
-- JWT Authentication
+AI-assisted code analysis and refactoring tool with:
+- FastAPI backend
+- static HTML/JS frontend
+- GitHub OAuth + JWT auth
+- rule-based multi-language metrics
+- LLM-based refactor suggestions
 
----
+## Prerequisites
+- Python 3.11+
+- GitHub OAuth app credentials
 
-## 1️⃣ Clone Repository
+## Environment
+Create `.env` in repository root using `.env.example` as template.
+
+Required keys:
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `JWT_SECRET`
+- `FRONTEND_URL` (for local: `http://127.0.0.1:8080`)
+- `LLM_API_KEY`
+- `LLM_MODEL`
+- `LLM_BASE_URL`
+
+Optional:
+- `CORS_ALLOW_ORIGINS` (comma-separated origins)
+
+## Install
 ```bash
-git clone https://github.com/<username>/Code-Refactorer.git
-cd Code-Refactorer
-
-Code Refactorer is an AI-driven backend system designed to analyze source code repositories and individual code files, detect:
-
-Programming languages used
-
-Code structure and hierarchy
-
-Metrics (lines, functions, classes, conditionals, libraries)
-
-Multi-language code inside a single file (HTML + CSS + JS)
-
-Python domain classification (ML / DL / NLP / Backend / General)
-
-Architectural patterns and style issues (foundation built)
-
-The project is built as a modular AI-agent system, where each agent is responsible for a specific analysis task.
-
-Frontend (HTML/JS)
-        ↓
-FastAPI Backend
-        ↓
-AI Orchestrator Agent
-        ↓
-Core Analysis Engine
-        ↓
-Language + Metrics + Domain Agents
-
-backend/
-│
-├── api/
-│   ├── routes/
-│   │   ├── analyze.py
-│   │   ├── login.py
-│   │   ├── files.py
-│   │   ├── code.py
-│   │   ├── profile.py
-│   │   └── repos.py
-│   │
-│   └── auth/
-│       └── jwt_manager.py
-│
-├── ai_agents/
-│   ├── orchestrator.py
-│   │
-│   ├── core/
-│   │   ├── engine.py
-│   │   ├── file_scanner.py
-│   │   ├── language_detector.py
-│   │   ├── language_registry.py
-│   │   ├── analysis_context.py
-│   │   └── code_segmenter.py
-│   │
-│   ├── metrics/
-│   │   ├── common_metrics.py
-│   │   ├── python_metrics.py
-│   │   ├── java_metrics.py
-│   │   ├── js_metrics.py
-│   │   ├── ts_metrics.py
-│   │   ├── c_metrics.py
-│   │   ├── cpp_metrics.py
-│   │   ├── csharp_metrics.py
-│   │   ├── go_metrics.py
-│   │   ├── php_metrics.py
-│   │   ├── rust_metrics.py
-│   │   └── metrics_aggregator.py
-│   │
-│   ├── domain/
-│   │   └── python_domain_classifier.py
-│   │
-│   ├── naming/
-│   │   └── naming_agent.py
-│   │
-│   ├── structure/
-│   │   └── structure_agent.py
-│   │
-│   ├── style/
-│   │   ├── common_style.py
-│   │   ├── python_style.py
-│   │   └── java_style.py
-│   │
-│   └── __init__.py
-│
-│
-├── main.py
-└── requirements.txt
-
-🧩 Detailed File-by-File Explanation
-🔹 backend/main.py
-
-Entry point of the FastAPI application
-
-Registers all API routes
-
-Starts the backend server
-
-🔐 Authentication Layer
-backend/api/auth/jwt_manager.py
-
-Creates and validates JWT tokens
-
-Used for protecting analysis endpoints
-
-Enables per-user authorization
-
-backend/api/routes/login.py
-
-Simple login endpoint (username → JWT)
-
-Designed for development and MVP usage
-
-Replaces hard-coded tokens
-
-🌐 API Routes
-analyze.py
-
-Single-file analysis endpoint
-
-Accepts raw code (from GitHub raw URL)
-
-Returns live AI analysis (no file storage)
-
-repos.py
-
-Handles GitHub repository selection
-
-Used by frontend dashboard
-
-files.py
-
-Fetches file lists from selected repo
-
-code.py
-
-Loads and displays file contents in viewer
-
-profile.py
-
-User profile related APIs
-
-🧠 AI Orchestration Layer
-ai_agents/orchestrator.py
-
-The brain of the system
-
-Responsibilities:
-
-Coordinates repo-level and file-level analysis
-
-Invokes core engine
-
-Routes code to correct language & domain analyzers
-
-Aggregates results
-
-⚙️ Core Analysis Engine
-engine.py
-
-Iterates through repository files
-
-Calls file scanner + language detection
-
-Passes code to appropriate analyzer
-
-file_scanner.py
-
-Recursively scans repository directories
-
-Reads source files safely
-
-language_detector.py
-
-Detects language from:
-
-File extension
-
-Code syntax (fallback)
-
-Supports multi-language scenarios
-
-language_registry.py
-
-Central registry mapping:
-
-language → metrics analyzer
-
-
-Makes system extensible
-
-code_segmenter.py
-
-Splits single files with multiple languages
-
-HTML
-
-<style> → CSS
-
-<script> → JavaScript
-
-Tracks start line numbers per language
-
-📊 Metrics System
-common_metrics.py
-
-Default metrics for unknown languages
-
-Counts:
-
-Lines
-
-Functions
-
-Classes
-
-Conditionals
-
-Language-Specific Metrics Files
-
-Each file analyzes syntax specific to the language:
-
-File	Language
-python_metrics.py	Python
-java_metrics.py	Java
-js_metrics.py	JavaScript
-ts_metrics.py	TypeScript
-c_metrics.py	C
-cpp_metrics.py	C++
-csharp_metrics.py	C#
-go_metrics.py	Go
-php_metrics.py	PHP
-rust_metrics.py	Rust
-
-Metrics include:
-
-Functions
-
-Classes
-
-Loops
-
-Conditionals
-
-Library / import detection
-
-🧠 Python Domain Intelligence
-domain/python_domain_classifier.py
-
-Analyzes Python code to determine domain:
-
-Machine Learning
-
-Deep Learning
-
-NLP
-
-Backend / API
-
-General scripting
-
-Uses:
-
-Import pattern analysis
-
-Keyword frequency
-
-Framework detection
-
-🧱 Structural & Style Agents
-structure_agent.py
-
-Analyzes project folder hierarchy
-
-Detects architectural patterns
-
-naming_agent.py
-
-Checks naming conventions
-
-Identifies anti-patterns
-
-style/
-
-Language-specific style rule foundation
-
-Ready for lint-level expansion
-
-📦 Output Handling
-metrics_aggregator.py
-
-Aggregates repo analysis
-
-Saves structured output to JSON
-
-Excluded from Git intentionally
-
-analysis_output/repo_metrics.json
-
-Runtime-generated
-
-Not committed
-
-Used for future dashboards and exports
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+## Run Locally (Clean Path)
+Open two terminals from repository root.
+
+Terminal 1 (backend):
+```bash
+uvicorn backend.main:app --reload --port 8000
+```
+
+Terminal 2 (frontend static server):
+```bash
+python -m http.server 8080 --directory frontend
+```
+
+Open:
+- Frontend: `http://127.0.0.1:8080/index.html`
+- API docs: `http://127.0.0.1:8000/docs`
+
+## Run Tests
+```bash
+python -m pytest -q
+```
+
+## High-Level Flow
+1. Login via GitHub OAuth.
+2. Browse repositories and files.
+3. Run file-level analysis (`/analyze`).
+4. Run LLM refactor (`/refactor`).
+5. Optionally run repo-level analysis (`/analyze-repo`).
+
+## Notes
+- Keep `.env` private; never commit real secrets.
+- If `langchain-groq` is unavailable, app still starts; repo-level AI reasoning falls back safely.
