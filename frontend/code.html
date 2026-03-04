@@ -1,6 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>Code Viewer · AI Refactor</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="container">
+  <button onclick="window.history.back()" class="btn" style="margin-bottom: 15px;">← Back to Files</button>
+  
+  <div class="box">
+    <div class="box-header">Source Code</div>
+    <pre id="codeBox" style="margin:0; padding:15px; overflow-x:auto; background:#0d1117;"><code>// Fetching code...</code></pre>
+  </div>
+
+  <div class="box">
+    <div class="box-header">✨ AI Analysis & Feedback</div>
+    <div id="analysisBox">Analyzing logic and suggesting refactors...</div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script type="module" src="js/code.js"></script>
+</body>
+</html>
+
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
   <title>Code Viewer</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -18,4 +45,4 @@
 
 
 </body>
-</html>
+</html> -->

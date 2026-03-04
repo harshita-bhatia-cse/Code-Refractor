@@ -1,3 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard · AI Refactor</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="container">
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h2>Welcome, <span id="user" style="color: var(--gh-accent);"></span></h2>
+    <button class="btn" onclick="localStorage.clear(); window.location.href='index.html'">Sign Out</button>
+  </header>
+
+  <div class="box">
+    <div class="box-header">Quick Actions</div>
+    <div class="box-body">
+      <p>Start by choosing a repository from your GitHub account.</p>
+      <button class="btn btn-primary" onclick="goRepos()">View Repositories</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("token")) {
+    localStorage.setItem("jwt_token", params.get("token"));
+    localStorage.setItem("github_user", params.get("user"));
+    history.replaceState({}, "", "dashboard.html");
+  }
+
+  const token = localStorage.getItem("jwt_token");
+  const user = localStorage.getItem("github_user");
+
+  if (!token || !user) { window.location.href = "index.html"; }
+  document.getElementById("user").innerText = user;
+
+  function goRepos() { window.location.href = "repo.html"; }
+</script>
+</body>
+</html>
+
 <!-- <!DOCTYPE html>
 <html>
 <head>
@@ -40,7 +82,7 @@
 
 </body>
 </html> -->
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
   <title>Dashboard</title>
@@ -167,4 +209,4 @@
 </script>
 
 </body>
-</html>
+</html> -->
