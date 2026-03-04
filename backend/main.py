@@ -1,17 +1,30 @@
-from pathlib import Path
-from dotenv import load_dotenv
-load_dotenv(Path(__file__).resolve().parent / ".env")
+from backend.utils.env import load_project_env
+
+load_project_env()
+
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# 🔥 ADD THIS BLOCK
+frontend_url = os.getenv("FRONTEND_URL", "").strip()
+cors_env = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+if cors_env:
+    allow_origins = [item.strip() for item in cors_env.split(",") if item.strip()]
+else:
+    allow_origins = [
+        "http://127.0.0.1:8080",
+        "http://localhost:8080",
+    ]
+    if frontend_url:
+        allow_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  #temp allow everything
-    allow_credentials=False,
+    allow_origins=sorted(set(allow_origins)),
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,7 +52,9 @@ app.include_router(repo_analyze.router)
 from backend.api.routes import refactor
 app.include_router(refactor.router)
 
-# from backend.api.routes import agent
+from backend.api.routes import generate
+app.include_router(generate.router)
 
+# from backend.api.routes import agent
 # app.include_router(agent.router)
 

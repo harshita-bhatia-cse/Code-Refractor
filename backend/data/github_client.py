@@ -12,15 +12,34 @@ class GitHubClient:
     # --------------------------------------------------
     # Get user repositories
     # --------------------------------------------------
-    def get_repositories(self, username: str):
-        url = f"https://api.github.com/users/{username}/repos"
+    def get_repositories(self):
+        # Use authenticated endpoint so private repositories are included.
+        url = "https://api.github.com/user/repos"
+        params = {
+            "visibility": "all",
+            "affiliation": "owner,collaborator,organization_member",
+            "per_page": 100,
+            "sort": "updated",
+        }
 
-        resp = requests.get(url, headers=self.headers)
+        repos = []
+        page = 1
+        while True:
+            page_params = dict(params)
+            page_params["page"] = page
 
-        if resp.status_code != 200:
-            raise Exception(f"GitHub API error: {resp.text}")
+            resp = requests.get(url, headers=self.headers, params=page_params)
+            if resp.status_code != 200:
+                raise Exception(f"GitHub API error: {resp.text}")
 
-        repos = resp.json()
+            chunk = resp.json()
+            if not chunk:
+                break
+
+            repos.extend(chunk)
+            if len(chunk) < params["per_page"]:
+                break
+            page += 1
 
         return [
             {

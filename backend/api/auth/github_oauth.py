@@ -4,15 +4,14 @@ import urllib.parse
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
-from pathlib import Path
-from dotenv import load_dotenv
 
 from backend.api.auth.jwt_manager import create_token
+from backend.utils.env import load_project_env
 
 # --------------------------------------------------
 # Load environment variables
 # --------------------------------------------------
-load_dotenv(Path(__file__).resolve().parents[2] / '.env')
+load_project_env()
 
 router = APIRouter(prefix="/auth/github", tags=["GitHub Auth"])
 

@@ -2,13 +2,13 @@ import os
 from datetime import datetime, timedelta
 
 import jwt
-from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pathlib import Path
 
-# Force-load backend/.env values for local development.
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+from backend.utils.env import load_project_env
+
+# Force-load project .env values for local development.
+load_project_env()
 
 SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
@@ -16,7 +16,7 @@ ALGORITHM = "HS256"
 if not SECRET_KEY:
     raise RuntimeError("JWT_SECRET not set in environment")
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def create_token(user: str, github_token: str):
@@ -31,6 +31,9 @@ def create_token(user: str, github_token: str):
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if credentials is None or not credentials.credentials:
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+
     token = credentials.credentials
 
     try:
