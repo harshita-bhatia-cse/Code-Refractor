@@ -13,6 +13,6 @@ def list_repos(payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     client = GitHubClient(github_token)
-    repos = client.get_repositories(username)
+    repos = client.get_repositories()
 
     return repos

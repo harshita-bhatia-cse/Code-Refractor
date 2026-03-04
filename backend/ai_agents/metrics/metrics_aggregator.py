@@ -5,8 +5,8 @@ from datetime import datetime
 
 class MetricsAggregator:
     def save(self, analysis_result: dict, output_path: str):
-        print("🔥 MetricsAggregator.save() CALLED")
-        print("🔥 Files analyzed:", len(analysis_result))
+        print("MetricsAggregator.save() called")
+        print("Files analyzed:", len(analysis_result))
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -19,4 +19,4 @@ class MetricsAggregator:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
 
-        print(f"✅ Metrics written to {output_path}")
+        print(f"Metrics written to {output_path}")

@@ -1,5 +1,6 @@
 import os
 import re
+import json
 
 
 EXTENSION_MAP = {
@@ -16,6 +17,7 @@ EXTENSION_MAP = {
     ".rs": "rust",
     ".html": "html",
     ".css": "css",
+    ".json": "json",
 }
 
 
@@ -26,6 +28,15 @@ def detect_language(filename: str) -> str:
 
 def detect_language_from_code(code: str) -> str:
     c = code.lower()
+    stripped = code.strip()
+
+    # ---------- JSON ----------
+    if stripped.startswith("{") or stripped.startswith("["):
+        try:
+            json.loads(stripped)
+            return "json"
+        except Exception:
+            pass
 
     # ---------- HTML ----------
     if "<!doctype html" in c or "<html" in c:

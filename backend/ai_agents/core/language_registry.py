@@ -8,6 +8,7 @@ from backend.ai_agents.metrics.csharp_metrics import CSharpMetrics
 from backend.ai_agents.metrics.go_metrics import GoMetrics
 from backend.ai_agents.metrics.php_metrics import PHPMetrics
 from backend.ai_agents.metrics.rust_metrics import RustMetrics
+from backend.ai_agents.metrics.json_metrics import JSONMetrics
 
 REGISTRY = {
     "python": PythonMetrics(),
@@ -20,6 +21,7 @@ REGISTRY = {
     "go": GoMetrics(),
     "php": PHPMetrics(),
     "rust": RustMetrics(),
+    "json": JSONMetrics(),
 }
 
 def get(language):
