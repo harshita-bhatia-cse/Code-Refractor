@@ -1,14 +1,15 @@
-import API from "./config.js?v=20260304b";
-import { requireAuth } from "./auth.js?v=20260304b";
+import API from "./config.js?v=20260304c";
+import { requireAuth } from "./auth.js?v=20260304c";
 
 const token = requireAuth();
 const repoList = document.getElementById("repoList");
 const repoStatus = document.getElementById("repoStatus");
+const retryRepoBtn = document.getElementById("retryRepoBtn");
 
 function setStatus(text, color = "") {
   if (!repoStatus) return;
   repoStatus.textContent = text;
-  repoStatus.style.color = color;
+  repoStatus.style.color = color || "#e2e8f0";
 }
 
 async function loadRepos() {
@@ -73,6 +74,12 @@ async function loadRepos() {
         "<li style='color:red'>Failed to load repositories</li>";
     }
   }
+}
+
+if (retryRepoBtn) {
+  retryRepoBtn.addEventListener("click", () => {
+    loadRepos();
+  });
 }
 
 window.openRepo = repo => {

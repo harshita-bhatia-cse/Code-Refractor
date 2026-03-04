@@ -1,5 +1,5 @@
-import API_BASE from "./config.js?v=20260304b";
-import { requireAuth } from "./auth.js?v=20260304b";
+import API_BASE from "./config.js?v=20260304c";
+import { requireAuth } from "./auth.js?v=20260304c";
 
 const repo = localStorage.getItem("selected_repo") || sessionStorage.getItem("selected_repo");
 const token = requireAuth();
@@ -7,13 +7,15 @@ const token = requireAuth();
 const fileList = document.getElementById("fileList");
 const fileStatus = document.getElementById("fileStatus");
 const llmBox = document.getElementById("llmBox");
+const retryFilesBtn = document.getElementById("retryFilesBtn");
+const retryRepoAnalysisBtn = document.getElementById("retryRepoAnalysisBtn");
 
 let currentPath = "";
 
 function setFileStatus(text, color = "") {
   if (!fileStatus) return;
   fileStatus.textContent = text;
-  fileStatus.style.color = color;
+  fileStatus.style.color = color || "#e2e8f0";
 }
 
 function setLlmStatus(html, isError = false) {
@@ -25,6 +27,7 @@ function setLlmStatus(html, isError = false) {
 if (!repo) {
   alert("Repository not selected");
   window.location.href = "repo.html";
+  throw new Error("Repository not selected");
 }
 
 // ==========================================
@@ -160,6 +163,18 @@ async function analyzeRepo() {
       : `AI analysis failed: ${err.message || String(err)}`;
     setLlmStatus(`<p>${msg}</p>`, true);
   }
+}
+
+if (retryFilesBtn) {
+  retryFilesBtn.addEventListener("click", () => {
+    loadFiles();
+  });
+}
+
+if (retryRepoAnalysisBtn) {
+  retryRepoAnalysisBtn.addEventListener("click", () => {
+    analyzeRepo();
+  });
 }
 
 // ==========================================

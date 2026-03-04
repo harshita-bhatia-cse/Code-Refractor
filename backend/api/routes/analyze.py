@@ -1,12 +1,13 @@
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Query
 from backend.api.auth.jwt_manager import verify_token
+from backend.api.schemas.analysis import AnalyzeResponse
 from backend.ai_agents.orchestrator import OrchestratorAgent
 
 router = APIRouter(prefix="/analyze", tags=["AI Analysis"])
 
 
-@router.get("/")
+@router.get("/", response_model=AnalyzeResponse)
 def analyze(
     raw_url: str = Query(...),
     user=Depends(verify_token)

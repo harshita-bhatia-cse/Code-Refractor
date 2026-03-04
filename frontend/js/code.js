@@ -1,9 +1,23 @@
-import API_BASE from "./config.js?v=20260304a";
-import { requireAuth } from "./auth.js?v=20260304a";
+import API_BASE from "./config.js?v=20260304c";
+import { requireAuth } from "./auth.js?v=20260304c";
 
 const codeBox = document.getElementById("codeBox");
 const analysisBox = document.getElementById("analysisBox");
 let refactorBox = document.getElementById("refactorBox");
+const analysisState = document.getElementById("analysisState");
+const refactorState = document.getElementById("refactorState");
+const retryAnalysisBtn = document.getElementById("retryAnalysisBtn");
+const retryRefactorBtn = document.getElementById("retryRefactorBtn");
+const rerunAllBtn = document.getElementById("rerunAllBtn");
+
+let activeToken = "";
+let activeRawUrl = "";
+
+function setChip(el, text, tone = "idle") {
+  if (!el) return;
+  el.textContent = text;
+  el.className = `status-chip status-${tone}`;
+}
 
 function setRefactorText(text) {
   if (!refactorBox) {
@@ -40,6 +54,7 @@ async function loadCode(rawUrl) {
 // run AI analysis
 async function runAnalysis(rawUrl, token) {
   try {
+    setChip(analysisState, "Running", "loading");
     setAnalysisText("Running AI analysis...");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
@@ -63,6 +78,7 @@ async function runAnalysis(rawUrl, token) {
     const data = await res.json();
     const text = JSON.stringify(data, null, 2);
     setAnalysisText(text || "AI analysis returned empty response.");
+    setChip(analysisState, "Completed", "ok");
 
   } catch (err) {
     console.error(err);
@@ -70,12 +86,14 @@ async function runAnalysis(rawUrl, token) {
       ? "AI analysis timed out after 20 seconds."
       : (err.message || String(err));
     setAnalysisText(`AI analysis failed.\n${msg}`);
+    setChip(analysisState, "Failed", "error");
   }
 }
 
 // run LLM refactor
 async function runRefactor(rawUrl, token) {
   try {
+    setChip(refactorState, "Running", "loading");
     setRefactorText("Running LLM refactor...");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000);
@@ -113,6 +131,7 @@ ${Array.isArray(llm.issues) && llm.issues.length ? llm.issues.map((x, i) => `${i
 Refactored Code:
 ${llm.refactored_code || "No refactored code returned"}`
     );
+    setChip(refactorState, ok ? "Completed" : "Failed", ok ? "ok" : "error");
 
   } catch (err) {
     console.error(err);
@@ -120,31 +139,64 @@ ${llm.refactored_code || "No refactored code returned"}`
       ? "LLM refactor request timed out after 45 seconds."
       : (err.message || String(err));
     setRefactorText(`LLM refactor failed.\n${msg}`);
+    setChip(refactorState, "Failed", "error");
   }
+}
+
+async function runAll() {
+  if (!activeRawUrl || !activeToken) return;
+  await loadCode(activeRawUrl);
+  await runAnalysis(activeRawUrl, activeToken);
+  await runRefactor(activeRawUrl, activeToken);
 }
 
 async function initPage() {
   try {
+    setChip(analysisState, "Initializing", "loading");
+    setChip(refactorState, "Initializing", "loading");
     setAnalysisText("Initializing...");
     setRefactorText("Initializing...");
 
     const token = requireAuth();
     const params = new URLSearchParams(window.location.search);
     const rawUrl = params.get("raw_url");
+    activeToken = token;
+    activeRawUrl = rawUrl || "";
 
     if (!rawUrl || !rawUrl.startsWith("http")) {
       setAnalysisText("Invalid file URL");
       setRefactorText("LLM refactor failed.\nInvalid raw_url");
+      setChip(analysisState, "Invalid URL", "error");
+      setChip(refactorState, "Invalid URL", "error");
       return;
     }
 
-    await loadCode(rawUrl);
-    await runAnalysis(rawUrl, token);
-    await runRefactor(rawUrl, token);
+    await runAll();
   } catch (err) {
     console.error(err);
     setRefactorText(`Initialization failed.\n${err.message || err}`);
+    setChip(refactorState, "Failed", "error");
   }
+}
+
+if (retryAnalysisBtn) {
+  retryAnalysisBtn.addEventListener("click", async () => {
+    if (!activeRawUrl || !activeToken) return;
+    await runAnalysis(activeRawUrl, activeToken);
+  });
+}
+
+if (retryRefactorBtn) {
+  retryRefactorBtn.addEventListener("click", async () => {
+    if (!activeRawUrl || !activeToken) return;
+    await runRefactor(activeRawUrl, activeToken);
+  });
+}
+
+if (rerunAllBtn) {
+  rerunAllBtn.addEventListener("click", async () => {
+    await runAll();
+  });
 }
 
 initPage();

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from backend.ai_agents.orchestrator import OrchestratorAgent
 from backend.ai_agents.refractor.refractor_agent import LLMRefractorAgent
 from backend.api.auth.jwt_manager import verify_token
+from backend.api.schemas.analysis import RefactorResponse
 
 router = APIRouter(prefix="/refactor", tags=["AI Refactor"])
 
@@ -17,7 +18,7 @@ class RefactorRequest(BaseModel):
     filename: Optional[str] = None
 
 
-@router.post("/")
+@router.post("/", response_model=RefactorResponse)
 def refactor_code(request: RefactorRequest, user=Depends(verify_token)):
     del user
 

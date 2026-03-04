@@ -6,17 +6,35 @@
 </head>
 <body>
 
-<h2>Source Code</h2>
-<pre id="codeBox"></pre>
+<div class="container page-shell">
+  <h2>Code Viewer</h2>
+  <div class="action-row">
+    <button id="rerunAllBtn" class="action-btn">Rerun All</button>
+  </div>
 
-<h3>AI Analysis</h3>
-<pre id="analysisBox" style="background:#111;color:#0f0;padding:10px;"></pre>
+  <h3>Source Code</h3>
+  <pre id="codeBox" class="panel-pre"></pre>
 
-<h3>LLM Refactor</h3>
-<pre id="refactorBox" style="background:#0f172a;color:#e2e8f0;padding:10px;">Loading LLM status...</pre>
+  <div class="section-head">
+    <h3>AI Analysis</h3>
+    <div class="head-actions">
+      <span id="analysisState" class="status-chip">Idle</span>
+      <button id="retryAnalysisBtn" class="action-btn">Retry Analysis</button>
+    </div>
+  </div>
+  <pre id="analysisBox" class="panel-pre panel-pre-success"></pre>
 
+  <div class="section-head">
+    <h3>LLM Refactor</h3>
+    <div class="head-actions">
+      <span id="refactorState" class="status-chip">Idle</span>
+      <button id="retryRefactorBtn" class="action-btn">Retry Refactor</button>
+    </div>
+  </div>
+  <pre id="refactorBox" class="panel-pre panel-pre-info">Loading LLM status...</pre>
+</div>
 
-<script type="module" src="js/code.js?v=20260304a"></script>
+<script type="module" src="js/code.js?v=20260304c"></script>
 
 
 </body>

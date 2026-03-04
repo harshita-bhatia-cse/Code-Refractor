@@ -2,13 +2,14 @@ import shutil
 import tempfile
 from fastapi import APIRouter, Depends, HTTPException
 from backend.api.auth.jwt_manager import verify_token
+from backend.api.schemas.analysis import AnalyzeRepoResponse
 from backend.ai_agents.orchestrator import OrchestratorAgent
 from backend.data.github_client import GitHubClient
 
 router = APIRouter(prefix="/analyze-repo", tags=["AI Repo Analysis"])
 
 
-@router.post("/")
+@router.post("/", response_model=AnalyzeRepoResponse)
 def analyze_repo(repo_path: str, user=Depends(verify_token)):
 
     try:

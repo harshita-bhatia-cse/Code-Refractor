@@ -6,18 +6,26 @@
 </head>
 <body>
 
-<h2>📂 Repository Files</h2>
-<p id="fileStatus">Loading files...</p>
-<ul id="fileList"></ul>
+<div class="container page-shell">
+  <h2>Repository Files</h2>
+  <div class="action-row">
+    <span id="fileStatus" class="status-chip">Loading files...</span>
+    <button id="retryFilesBtn" class="action-btn">Retry Files</button>
+  </div>
+  <ul id="fileList"></ul>
 
-<hr>
+  <hr class="divider">
 
-<h2>🤖 AI Analysis</h2>
-<div id="llmBox">
-  <p>Loading AI analysis...</p>
+  <h2>AI Analysis</h2>
+  <div class="action-row">
+    <button id="retryRepoAnalysisBtn" class="action-btn">Retry AI Analysis</button>
+  </div>
+  <div id="llmBox" class="panel-card">
+    <p>Loading AI analysis...</p>
+  </div>
 </div>
 
-<script type="module" src="js/files.js?v=20260304b"></script>
+<script type="module" src="js/files.js?v=20260304c"></script>
 
 </body>
 </html>
