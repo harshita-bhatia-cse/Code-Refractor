@@ -1,6 +1,7 @@
+import ast
 import json
 import os
-import ast
+import re
 from typing import Any
 
 import requests
@@ -151,6 +152,32 @@ class LLMRefractorAgent(BaseRefractor):
 
         parsed = self._parse_json_content(content)
         if not parsed:
+            parsed = self._parse_json_content_loose(content)
+
+        if not parsed:
+            pseudo = self._extract_fields_from_pseudo_json(content)
+            if pseudo:
+                issues = pseudo.get("issues", [])
+                if not isinstance(issues, list):
+                    issues = [str(issues)]
+                normalized_code, normalization_issue = self._normalize_refactored_code(
+                    code=str(pseudo.get("refactored_code", code)),
+                    language=language,
+                )
+                if normalization_issue:
+                    issues.append(normalization_issue)
+                issues.append("LLM response did not follow required JSON envelope; used heuristic field extraction.")
+                return {
+                    "ok": True,
+                    "language": language,
+                    "filename": filename,
+                    "error": None,
+                    "summary": str(pseudo.get("summary", "")).strip() or "Used heuristic fallback parser.",
+                    "issues": [str(item) for item in issues],
+                    "refactored_code": normalized_code,
+                    "raw_output": content,
+                }
+
             # Fallback: accept plain-text model output and normalize when possible.
             fallback_code = self._extract_code_from_text(content)
             normalized_code, normalization_issue = self._normalize_refactored_code(
@@ -171,6 +198,8 @@ class LLMRefractorAgent(BaseRefractor):
                 "refactored_code": normalized_code,
                 "raw_output": content,
             }
+
+        parsed = self._coerce_parsed_envelope(parsed)
 
         issues = parsed.get("issues", [])
         if not isinstance(issues, list):
@@ -252,6 +281,26 @@ class LLMRefractorAgent(BaseRefractor):
         return text
 
     @staticmethod
+    def _coerce_parsed_envelope(data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Normalize parsed payload and unwrap nested envelope when models return
+        `refactored_code` as an embedded JSON object string.
+        """
+        result = dict(data)
+        nested = result.get("refactored_code")
+        if isinstance(nested, str):
+            nested_parsed = LLMRefractorAgent._parse_json_content(nested) or LLMRefractorAgent._parse_json_content_loose(nested)
+            if not nested_parsed:
+                nested_parsed = LLMRefractorAgent._extract_fields_from_pseudo_json(nested)
+            if isinstance(nested_parsed, dict) and "refactored_code" in nested_parsed:
+                if "summary" not in result and "summary" in nested_parsed:
+                    result["summary"] = nested_parsed["summary"]
+                if "issues" not in result and "issues" in nested_parsed:
+                    result["issues"] = nested_parsed["issues"]
+                result["refactored_code"] = nested_parsed["refactored_code"]
+        return result
+
+    @staticmethod
     def _parse_json_content(content: str) -> dict[str, Any] | None:
         content = content.strip()
 
@@ -276,3 +325,107 @@ class LLMRefractorAgent(BaseRefractor):
             return None
 
         return None
+
+    @staticmethod
+    def _parse_json_content_loose(content: str) -> dict[str, Any] | None:
+        """
+        Best-effort parser for near-JSON payloads (e.g., Python dict style,
+        single quotes, wrapper prose around an object).
+        """
+        text = (content or "").strip()
+        if not text:
+            return None
+
+        if text.startswith("```") and text.endswith("```"):
+            parts = text.split("```")
+            if len(parts) >= 3:
+                text = parts[1].strip()
+                lines = text.splitlines()
+                if lines and lines[0].strip().lower() in {
+                    "json", "javascript", "typescript", "python", "java", "go", "c", "cpp", "csharp", "php", "rust"
+                }:
+                    text = "\n".join(lines[1:]).strip()
+
+        candidates = [text]
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            candidates.append(text[start : end + 1])
+
+        for candidate in candidates:
+            try:
+                maybe = ast.literal_eval(candidate)
+                if isinstance(maybe, dict):
+                    return maybe
+            except Exception:
+                continue
+
+        return None
+
+    @staticmethod
+    def _extract_fields_from_pseudo_json(content: str) -> dict[str, Any] | None:
+        """
+        Heuristic extractor for malformed JSON-like payloads where strict/loose
+        parsing fails but field labels are still present.
+        """
+        text = (content or "").strip()
+        if not text:
+            return None
+        text = LLMRefractorAgent._strip_markdown_fences(text)
+
+        if '"refactored_code"' not in text:
+            return None
+
+        summary = ""
+        summary_match = re.search(r'"summary"\s*:\s*"([^"]*)"', text, re.DOTALL)
+        if summary_match:
+            summary = summary_match.group(1).strip()
+
+        issues: list[str] = []
+        issues_block = re.search(r'"issues"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+        if issues_block:
+            issues = [
+                item.strip()
+                for item in re.findall(r'"([^"]*)"', issues_block.group(1), re.DOTALL)
+                if item.strip()
+            ]
+
+        code_match = re.search(r'"refactored_code"\s*:\s*"(.*)"\s*(?:,|\})', text, re.DOTALL)
+        if not code_match:
+            return None
+
+        raw_code = code_match.group(1).strip()
+        if raw_code.endswith('",'):
+            raw_code = raw_code[:-2]
+        elif raw_code.endswith('"'):
+            raw_code = raw_code[:-1]
+
+        # Best-effort unescape to convert \" and \n to readable code.
+        try:
+            unescaped = bytes(raw_code, "utf-8").decode("unicode_escape")
+        except Exception:
+            unescaped = raw_code
+
+        unescaped = unescaped.strip()
+        if not unescaped:
+            return None
+
+        return {
+            "summary": summary,
+            "issues": issues,
+            "refactored_code": unescaped,
+        }
+
+    @staticmethod
+    def _strip_markdown_fences(text: str) -> str:
+        if text.startswith("```") and text.endswith("```"):
+            parts = text.split("```")
+            if len(parts) >= 3:
+                body = parts[1].strip()
+                lines = body.splitlines()
+                if lines and lines[0].strip().lower() in {
+                    "json", "javascript", "typescript", "python", "java", "go", "c", "cpp", "csharp", "php", "rust"
+                }:
+                    return "\n".join(lines[1:]).strip()
+                return body
+        return text

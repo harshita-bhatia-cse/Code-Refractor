@@ -1,5 +1,5 @@
-import API_BASE from "./config.js?v=20260301g";
-import { requireAuth } from "./auth.js?v=20260301g";
+import API_BASE from "./config.js?v=20260304a";
+import { requireAuth } from "./auth.js?v=20260304a";
 
 const codeBox = document.getElementById("codeBox");
 const analysisBox = document.getElementById("analysisBox");
@@ -20,6 +20,12 @@ function setRefactorText(text) {
   }
 }
 
+function setAnalysisText(text) {
+  if (analysisBox) {
+    analysisBox.textContent = text;
+  }
+}
+
 // load source code
 async function loadCode(rawUrl) {
   try {
@@ -34,14 +40,20 @@ async function loadCode(rawUrl) {
 // run AI analysis
 async function runAnalysis(rawUrl, token) {
   try {
+    setAnalysisText("Running AI analysis...");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
     const res = await fetch(
       `${API_BASE}/analyze/?raw_url=${encodeURIComponent(rawUrl)}`,
       {
+        signal: controller.signal,
         headers: {
           Authorization: `Bearer ${token}`
         }
       }
     );
+    clearTimeout(timeout);
 
     if (!res.ok) {
       const txt = await res.text();
@@ -49,11 +61,15 @@ async function runAnalysis(rawUrl, token) {
     }
 
     const data = await res.json();
-    analysisBox.textContent = JSON.stringify(data, null, 2);
+    const text = JSON.stringify(data, null, 2);
+    setAnalysisText(text || "AI analysis returned empty response.");
 
   } catch (err) {
     console.error(err);
-    analysisBox.textContent = "AI analysis failed.";
+    const msg = err && err.name === "AbortError"
+      ? "AI analysis timed out after 20 seconds."
+      : (err.message || String(err));
+    setAnalysisText(`AI analysis failed.\n${msg}`);
   }
 }
 
@@ -109,6 +125,7 @@ ${llm.refactored_code || "No refactored code returned"}`
 
 async function initPage() {
   try {
+    setAnalysisText("Initializing...");
     setRefactorText("Initializing...");
 
     const token = requireAuth();
@@ -116,7 +133,7 @@ async function initPage() {
     const rawUrl = params.get("raw_url");
 
     if (!rawUrl || !rawUrl.startsWith("http")) {
-      analysisBox.textContent = "Invalid file URL";
+      setAnalysisText("Invalid file URL");
       setRefactorText("LLM refactor failed.\nInvalid raw_url");
       return;
     }

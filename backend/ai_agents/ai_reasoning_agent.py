@@ -62,14 +62,22 @@
 #                 "raw_output": raw_output
 #             }
 
-from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
 import json
+
+try:
+    from langchain_groq import ChatGroq
+    from langchain_core.prompts import ChatPromptTemplate
+except Exception:
+    ChatGroq = None
+    ChatPromptTemplate = None
 
 
 class AIReasoningAgent:
 
     def __init__(self):
+        self.chain = None
+        if ChatGroq is None or ChatPromptTemplate is None:
+            return
 
         self.llm = ChatGroq(
             model="llama-3.1-8b-instant",
@@ -99,6 +107,17 @@ Return JSON only. No explanation.
         self.chain = self.prompt | self.llm
 
     def analyze(self, metrics: dict):
+        if self.chain is None:
+            return {
+                "maintainability_score": 0,
+                "complexity_level": "unknown",
+                "architecture_type": "unavailable",
+                "strengths": [],
+                "weaknesses": ["AI reasoning disabled: langchain_groq not installed."],
+                "recommendations": [
+                    "Install langchain-groq to enable repository-level AI reasoning."
+                ],
+            }
 
         formatted_prompt = self.chain.invoke({
             "metrics": json.dumps(metrics)
