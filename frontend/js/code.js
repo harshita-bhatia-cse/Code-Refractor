@@ -1,17 +1,29 @@
-import API_BASE from "./config.js?v=20260304c";
-import { requireAuth } from "./auth.js?v=20260304c";
+import API_BASE from "./config.js?v=20260305a";
+import { requireAuth } from "./auth.js?v=20260305a";
 
 const codeBox = document.getElementById("codeBox");
+const originalBox = document.getElementById("originalBox");
+const refactoredBox = document.getElementById("refactoredBox");
 const analysisBox = document.getElementById("analysisBox");
+const qualitySummary = document.getElementById("qualitySummary");
+const qualityBadges = document.getElementById("qualityBadges");
 let refactorBox = document.getElementById("refactorBox");
+
 const analysisState = document.getElementById("analysisState");
 const refactorState = document.getElementById("refactorState");
+
 const retryAnalysisBtn = document.getElementById("retryAnalysisBtn");
 const retryRefactorBtn = document.getElementById("retryRefactorBtn");
 const rerunAllBtn = document.getElementById("rerunAllBtn");
+const acceptRefactorBtn = document.getElementById("acceptRefactorBtn");
+const rejectRefactorBtn = document.getElementById("rejectRefactorBtn");
+const downloadPatchBtn = document.getElementById("downloadPatchBtn");
 
 let activeToken = "";
 let activeRawUrl = "";
+let activeFilename = "snippet.txt";
+let sourceCodeOriginal = "";
+let latestRefactoredCode = "";
 
 function setChip(el, text, tone = "idle") {
   if (!el) return;
@@ -20,38 +32,49 @@ function setChip(el, text, tone = "idle") {
 }
 
 function setRefactorText(text) {
-  if (!refactorBox) {
-    refactorBox = document.createElement("pre");
-    refactorBox.id = "refactorBox";
-    refactorBox.style.background = "#0f172a";
-    refactorBox.style.color = "#e2e8f0";
-    refactorBox.style.padding = "10px";
-    refactorBox.style.whiteSpace = "pre-wrap";
-    document.body.appendChild(refactorBox);
-  }
-  if (refactorBox) {
-    refactorBox.textContent = text;
-  }
+  if (!refactorBox) return;
+  refactorBox.textContent = text;
 }
 
 function setAnalysisText(text) {
-  if (analysisBox) {
-    analysisBox.textContent = text;
-  }
+  if (!analysisBox) return;
+  analysisBox.textContent = text;
 }
 
-// load source code
+function setQuality(data) {
+  if (!qualitySummary || !qualityBadges) return;
+
+  const score = data?.overall_quality_score;
+  const grade = data?.overall_grade;
+  const badges = Array.isArray(data?.overall_risk_badges) ? data.overall_risk_badges : [];
+
+  if (typeof score !== "number" || !grade) {
+    qualitySummary.textContent = "Quality score unavailable for this file.";
+    qualityBadges.innerHTML = "";
+    return;
+  }
+
+  qualitySummary.textContent = `Score: ${score}/100 • Grade: ${grade}`;
+  qualityBadges.innerHTML = badges
+    .map((tag) => `<span class="risk-badge">${tag}</span>`)
+    .join("");
+}
+
 async function loadCode(rawUrl) {
   try {
     const res = await fetch(rawUrl);
     if (!res.ok) throw new Error("Failed to load code");
-    codeBox.textContent = await res.text();
-  } catch (err) {
+    const text = await res.text();
+    sourceCodeOriginal = text;
+    codeBox.textContent = text;
+    if (originalBox) originalBox.textContent = text;
+    if (refactoredBox) refactoredBox.textContent = "Waiting for refactor...";
+  } catch {
     codeBox.textContent = "Failed to load source code.";
+    if (originalBox) originalBox.textContent = "";
   }
 }
 
-// run AI analysis
 async function runAnalysis(rawUrl, token) {
   try {
     setChip(analysisState, "Running", "loading");
@@ -59,15 +82,10 @@ async function runAnalysis(rawUrl, token) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
 
-    const res = await fetch(
-      `${API_BASE}/analyze/?raw_url=${encodeURIComponent(rawUrl)}`,
-      {
-        signal: controller.signal,
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const res = await fetch(`${API_BASE}/analyze/?raw_url=${encodeURIComponent(rawUrl)}`, {
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${token}` },
+    });
     clearTimeout(timeout);
 
     if (!res.ok) {
@@ -76,25 +94,24 @@ async function runAnalysis(rawUrl, token) {
     }
 
     const data = await res.json();
-    const text = JSON.stringify(data, null, 2);
-    setAnalysisText(text || "AI analysis returned empty response.");
+    setAnalysisText(JSON.stringify(data, null, 2) || "AI analysis returned empty response.");
+    setQuality(data);
     setChip(analysisState, "Completed", "ok");
-
   } catch (err) {
-    console.error(err);
-    const msg = err && err.name === "AbortError"
-      ? "AI analysis timed out after 20 seconds."
-      : (err.message || String(err));
+    const msg =
+      err && err.name === "AbortError"
+        ? "AI analysis timed out after 20 seconds."
+        : (err.message || String(err));
     setAnalysisText(`AI analysis failed.\n${msg}`);
     setChip(analysisState, "Failed", "error");
   }
 }
 
-// run LLM refactor
 async function runRefactor(rawUrl, token) {
   try {
     setChip(refactorState, "Running", "loading");
     setRefactorText("Running LLM refactor...");
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000);
 
@@ -102,12 +119,10 @@ async function runRefactor(rawUrl, token) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       signal: controller.signal,
-      body: JSON.stringify({
-        raw_url: rawUrl
-      })
+      body: JSON.stringify({ raw_url: rawUrl }),
     });
     clearTimeout(timeout);
 
@@ -119,6 +134,11 @@ async function runRefactor(rawUrl, token) {
     const data = await res.json();
     const llm = data.llm_refactor || {};
     const ok = llm.ok === true;
+    latestRefactoredCode = llm.refactored_code || "";
+
+    if (refactoredBox) {
+      refactoredBox.textContent = latestRefactoredCode || "No refactored code returned";
+    }
 
     setRefactorText(
 `Status: ${ok ? "OK" : "FAILED"}
@@ -126,21 +146,40 @@ ${llm.error ? `Error: ${llm.error}\n` : ""}Summary:
 ${llm.summary || "No summary provided"}
 
 Issues:
-${Array.isArray(llm.issues) && llm.issues.length ? llm.issues.map((x, i) => `${i + 1}. ${x}`).join("\n") : "No issues listed"}
-
-Refactored Code:
-${llm.refactored_code || "No refactored code returned"}`
+${Array.isArray(llm.issues) && llm.issues.length ? llm.issues.map((x, i) => `${i + 1}. ${x}`).join("\n") : "No issues listed"}`
     );
-    setChip(refactorState, ok ? "Completed" : "Failed", ok ? "ok" : "error");
 
+    setChip(refactorState, ok ? "Completed" : "Failed", ok ? "ok" : "error");
   } catch (err) {
-    console.error(err);
-    const msg = err && err.name === "AbortError"
-      ? "LLM refactor request timed out after 45 seconds."
-      : (err.message || String(err));
+    const msg =
+      err && err.name === "AbortError"
+        ? "LLM refactor request timed out after 45 seconds."
+        : (err.message || String(err));
     setRefactorText(`LLM refactor failed.\n${msg}`);
+    if (refactoredBox) refactoredBox.textContent = "Refactor unavailable.";
     setChip(refactorState, "Failed", "error");
   }
+}
+
+function generateUnifiedPatch(oldText, newText, filename) {
+  const oldLines = (oldText || "").split("\n");
+  const newLines = (newText || "").split("\n");
+  const header = `--- a/${filename}\n+++ b/${filename}\n@@ -1,${oldLines.length} +1,${newLines.length} @@`;
+  const removed = oldLines.map((line) => `-${line}`).join("\n");
+  const added = newLines.map((line) => `+${line}`).join("\n");
+  return `${header}\n${removed}\n${added}\n`;
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 async function runAll() {
@@ -157,13 +196,12 @@ async function initPage() {
     setAnalysisText("Initializing...");
     setRefactorText("Initializing...");
 
-    const token = requireAuth();
+    activeToken = requireAuth();
     const params = new URLSearchParams(window.location.search);
-    const rawUrl = params.get("raw_url");
-    activeToken = token;
-    activeRawUrl = rawUrl || "";
+    activeRawUrl = params.get("raw_url") || "";
+    activeFilename = (activeRawUrl.split("/").pop() || "snippet.txt").split("?")[0];
 
-    if (!rawUrl || !rawUrl.startsWith("http")) {
+    if (!activeRawUrl || !activeRawUrl.startsWith("http")) {
       setAnalysisText("Invalid file URL");
       setRefactorText("LLM refactor failed.\nInvalid raw_url");
       setChip(analysisState, "Invalid URL", "error");
@@ -173,7 +211,6 @@ async function initPage() {
 
     await runAll();
   } catch (err) {
-    console.error(err);
     setRefactorText(`Initialization failed.\n${err.message || err}`);
     setChip(refactorState, "Failed", "error");
   }
@@ -196,6 +233,27 @@ if (retryRefactorBtn) {
 if (rerunAllBtn) {
   rerunAllBtn.addEventListener("click", async () => {
     await runAll();
+  });
+}
+
+if (acceptRefactorBtn) {
+  acceptRefactorBtn.addEventListener("click", () => {
+    if (!latestRefactoredCode) return;
+    codeBox.textContent = latestRefactoredCode;
+  });
+}
+
+if (rejectRefactorBtn) {
+  rejectRefactorBtn.addEventListener("click", () => {
+    codeBox.textContent = sourceCodeOriginal || "";
+  });
+}
+
+if (downloadPatchBtn) {
+  downloadPatchBtn.addEventListener("click", () => {
+    if (!sourceCodeOriginal || !latestRefactoredCode) return;
+    const patch = generateUnifiedPatch(sourceCodeOriginal, latestRefactoredCode, activeFilename);
+    downloadTextFile(`${activeFilename}.diff`, patch);
   });
 }
 

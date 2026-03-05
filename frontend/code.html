@@ -10,10 +10,30 @@
   <h2>Code Viewer</h2>
   <div class="action-row">
     <button id="rerunAllBtn" class="action-btn">Rerun All</button>
+    <button id="acceptRefactorBtn" class="action-btn">Accept Refactor</button>
+    <button id="rejectRefactorBtn" class="action-btn">Reject Refactor</button>
+    <button id="downloadPatchBtn" class="action-btn">Download Patch</button>
+  </div>
+
+  <div id="qualityBox" class="quality-card">
+    <h3>Quality Score</h3>
+    <p id="qualitySummary">Waiting for analysis...</p>
+    <div id="qualityBadges" class="badge-row"></div>
   </div>
 
   <h3>Source Code</h3>
   <pre id="codeBox" class="panel-pre"></pre>
+
+  <div class="diff-grid">
+    <div>
+      <h3>Original</h3>
+      <pre id="originalBox" class="panel-pre"></pre>
+    </div>
+    <div>
+      <h3>Refactored</h3>
+      <pre id="refactoredBox" class="panel-pre"></pre>
+    </div>
+  </div>
 
   <div class="section-head">
     <h3>AI Analysis</h3>
@@ -34,7 +54,7 @@
   <pre id="refactorBox" class="panel-pre panel-pre-info">Loading LLM status...</pre>
 </div>
 
-<script type="module" src="js/code.js?v=20260304c"></script>
+<script type="module" src="js/code.js?v=20260305a"></script>
 
 
 </body>

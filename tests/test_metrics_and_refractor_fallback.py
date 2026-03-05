@@ -1,4 +1,5 @@
 from backend.ai_agents.metrics.java_metrics import JavaMetrics
+from backend.ai_agents.orchestrator import OrchestratorAgent
 from backend.ai_agents.refractor.refractor_agent import LLMRefractorAgent
 
 
@@ -38,3 +39,19 @@ def test_refractor_fallback_unwraps_nested_json_string():
     assert normalized["issues"] == ["outer issue"]
     assert "refactored_code" in normalized
     assert "public class Solution" in normalized["refactored_code"]
+
+
+def test_quality_score_returns_grade_and_badges():
+    quality = OrchestratorAgent._score_quality(
+        {
+            "lines": 650,
+            "functions": 35,
+            "classes": 2,
+            "conditionals": {"if": 12, "for": 5, "while": 1, "switch": 0},
+        }
+    )
+    assert 0 <= quality["score"] <= 100
+    assert quality["grade"] in {"A", "B", "C", "D", "F"}
+    assert "high-complexity" in quality["risk_badges"]
+    assert "too-many-functions" in quality["risk_badges"]
+    assert "large-file" in quality["risk_badges"]

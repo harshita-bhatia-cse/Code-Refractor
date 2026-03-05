@@ -61,14 +61,68 @@ class OrchestratorAgent:
         else:
             metrics = CommonMetrics().analyze(code)
 
+        quality = self._score_quality(metrics)
+
         return {
             "languages_detected": [language],
+            "overall_quality_score": quality["score"],
+            "overall_grade": quality["grade"],
+            "overall_risk_badges": quality["risk_badges"],
             "analysis": {
                 language: {
                     "start_lines": [1],
-                    "metrics": metrics
+                    "metrics": metrics,
+                    "quality_score": quality["score"],
+                    "grade": quality["grade"],
+                    "risk_badges": quality["risk_badges"],
                 }
             }
+        }
+
+    @staticmethod
+    def _score_quality(metrics: dict) -> dict:
+        lines = int(metrics.get("lines", 0) or 0)
+        functions = int(metrics.get("functions", 0) or 0)
+        classes = int(metrics.get("classes", 0) or 0)
+        conditionals = metrics.get("conditionals", {}) or {}
+        conditional_total = sum(int(conditionals.get(k, 0) or 0) for k in ("if", "for", "while", "switch"))
+
+        penalty = 0
+        penalty += min(40, conditional_total * 2)
+        penalty += max(0, functions - 20)
+        penalty += max(0, classes - 10) * 2
+        if lines > 400:
+            penalty += min(20, (lines - 400) // 20)
+
+        score = max(0, min(100, 100 - penalty))
+
+        if score >= 90:
+            grade = "A"
+        elif score >= 80:
+            grade = "B"
+        elif score >= 70:
+            grade = "C"
+        elif score >= 60:
+            grade = "D"
+        else:
+            grade = "F"
+
+        risk_badges = []
+        if conditional_total >= 15:
+            risk_badges.append("high-complexity")
+        if functions >= 25:
+            risk_badges.append("too-many-functions")
+        if lines >= 500:
+            risk_badges.append("large-file")
+        if score < 60:
+            risk_badges.append("low-maintainability")
+        if not risk_badges:
+            risk_badges.append("healthy")
+
+        return {
+            "score": score,
+            "grade": grade,
+            "risk_badges": risk_badges,
         }
 
 

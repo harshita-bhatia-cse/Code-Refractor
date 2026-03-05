@@ -1,4 +1,5 @@
 from backend.api.routes import analyze as analyze_route
+from backend.api.routes import repo_analyze as repo_analyze_route
 from backend.api.routes import refactor as refactor_route
 from backend.data.github_client import GitHubClient
 
@@ -97,3 +98,51 @@ def test_refactor_inline_code(authed_client, monkeypatch):
 def test_generate_is_not_implemented(authed_client):
     response = authed_client.post("/generate/")
     assert response.status_code == 501
+
+
+def test_analyze_repo_success_cleans_temp_dir(authed_client, monkeypatch):
+    deleted_paths = []
+
+    monkeypatch.setattr(repo_analyze_route.tempfile, "mkdtemp", lambda: "tmp-repo-dir")
+    monkeypatch.setattr(
+        repo_analyze_route.shutil,
+        "rmtree",
+        lambda path, ignore_errors=True: deleted_paths.append((path, ignore_errors)),
+    )
+    monkeypatch.setattr(
+        repo_analyze_route.GitHubClient,
+        "download_repo",
+        lambda self, username, repo, save_path: None,
+    )
+    monkeypatch.setattr(
+        repo_analyze_route.OrchestratorAgent,
+        "run",
+        lambda self, repo_path, output_path: {"rule_metrics": {}, "ai_analysis": {}},
+    )
+
+    response = authed_client.post("/analyze-repo/", params={"repo_path": "demo-repo"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["message"] == "Repository analyzed successfully"
+    assert deleted_paths == [("tmp-repo-dir", True)]
+
+
+def test_analyze_repo_failure_still_cleans_temp_dir(authed_client, monkeypatch):
+    deleted_paths = []
+
+    monkeypatch.setattr(repo_analyze_route.tempfile, "mkdtemp", lambda: "tmp-repo-dir")
+    monkeypatch.setattr(
+        repo_analyze_route.shutil,
+        "rmtree",
+        lambda path, ignore_errors=True: deleted_paths.append((path, ignore_errors)),
+    )
+    monkeypatch.setattr(
+        repo_analyze_route.GitHubClient,
+        "download_repo",
+        lambda self, username, repo, save_path: (_ for _ in ()).throw(Exception("download failed")),
+    )
+
+    response = authed_client.post("/analyze-repo/", params={"repo_path": "demo-repo"})
+    assert response.status_code == 500
+    assert response.json()["detail"] == "download failed"
+    assert deleted_paths == [("tmp-repo-dir", True)]
