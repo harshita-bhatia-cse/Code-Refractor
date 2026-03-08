@@ -63,6 +63,7 @@
 #             }
 
 import json
+import os
 
 try:
     from langchain_groq import ChatGroq
@@ -79,9 +80,15 @@ class AIReasoningAgent:
         if ChatGroq is None or ChatPromptTemplate is None:
             return
 
+        api_key = os.getenv("GROQ_API_KEY", "").strip()
+        if not api_key:
+            # Treat missing key same as missing package: disable gracefully.
+            return
+
         self.llm = ChatGroq(
             model="llama-3.1-8b-instant",
-            temperature=0
+            temperature=0,
+            api_key=api_key,
         )
 
         self.prompt = ChatPromptTemplate.from_messages([
@@ -113,9 +120,11 @@ Return JSON only. No explanation.
                 "complexity_level": "unknown",
                 "architecture_type": "unavailable",
                 "strengths": [],
-                "weaknesses": ["AI reasoning disabled: langchain_groq not installed."],
+                "weaknesses": [
+                    "AI reasoning disabled: langchain_groq missing or GROQ_API_KEY not set."
+                ],
                 "recommendations": [
-                    "Install langchain-groq to enable repository-level AI reasoning."
+                    "Install langchain-groq and set GROQ_API_KEY to enable repository-level AI reasoning."
                 ],
             }
 

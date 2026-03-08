@@ -1,4 +1,6 @@
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from backend.utils.url_validation import validate_github_raw_url
 
@@ -8,8 +10,26 @@ class GitHubClient:
         self.headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28"
+            "X-GitHub-Api-Version": "2022-11-28",
         }
+
+        # Resilient session with retries and bounded timeouts so frontend
+        # 15s client-side timeout is less likely to trip.
+        self._session = requests.Session()
+        self._session.mount(
+            "https://",
+            HTTPAdapter(
+                max_retries=Retry(
+                    total=3,
+                    backoff_factor=0.4,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                    allowed_methods=["GET"],
+                )
+            ),
+        )
+
+        # Default timeouts (connect, read)
+        self._timeout = (5, 10)
 
     # --------------------------------------------------
     # Get user repositories
@@ -30,7 +50,9 @@ class GitHubClient:
             page_params = dict(params)
             page_params["page"] = page
 
-            resp = requests.get(url, headers=self.headers, params=page_params)
+            resp = self._session.get(
+                url, headers=self.headers, params=page_params, timeout=self._timeout
+            )
             if resp.status_code != 200:
                 raise Exception(f"GitHub API error: {resp.text}")
 
@@ -58,7 +80,7 @@ class GitHubClient:
     def get_repo_contents(self, owner: str, repo: str, path: str = ""):
         url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
 
-        resp = requests.get(url, headers=self.headers)
+        resp = self._session.get(url, headers=self.headers, timeout=self._timeout)
 
         if resp.status_code != 200:
             raise Exception(f"GitHub API error: {resp.text}")
@@ -70,7 +92,12 @@ class GitHubClient:
     # --------------------------------------------------
     def get_file_content(self, raw_url: str):
         safe_url = validate_github_raw_url(raw_url)
-        resp = requests.get(safe_url, headers=self.headers, allow_redirects=False)
+        resp = self._session.get(
+            safe_url,
+            headers=self.headers,
+            allow_redirects=False,
+            timeout=self._timeout,
+        )
 
         if resp.status_code != 200:
             return {
@@ -81,7 +108,8 @@ class GitHubClient:
         return {
             "content": resp.text
         }
-        # --------------------------------------------------
+
+    # --------------------------------------------------
     # Download full repository as ZIP
     # --------------------------------------------------
     def download_repo(self, owner: str, repo: str, save_path: str):
@@ -91,7 +119,7 @@ class GitHubClient:
 
         url = f"https://api.github.com/repos/{owner}/{repo}/zipball"
 
-        response = requests.get(url, headers=self.headers)
+        response = self._session.get(url, headers=self.headers, timeout=self._timeout)
 
         if response.status_code != 200:
             raise Exception(f"Failed to download repo: {response.text}")
@@ -105,5 +133,3 @@ class GitHubClient:
         # Extract zip
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(save_path)
-
-
