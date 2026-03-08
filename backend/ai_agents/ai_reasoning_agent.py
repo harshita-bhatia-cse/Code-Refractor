@@ -68,9 +68,11 @@ import os
 try:
     from langchain_groq import ChatGroq
     from langchain_core.prompts import ChatPromptTemplate
+    from groq import GroqError
 except Exception:
     ChatGroq = None
     ChatPromptTemplate = None
+    GroqError = None
 
 
 class AIReasoningAgent:
@@ -85,15 +87,16 @@ class AIReasoningAgent:
             # Treat missing key same as missing package: disable gracefully.
             return
 
-        self.llm = ChatGroq(
-            model="llama-3.1-8b-instant",
-            temperature=0,
-            api_key=api_key,
-        )
+        try:
+            self.llm = ChatGroq(
+                model="llama-3.1-8b-instant",
+                temperature=0,
+                api_key=api_key,
+            )
 
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a senior software architect analyzing repository quality."),
-            ("human", """
+            self.prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are a senior software architect analyzing repository quality."),
+                ("human", """
 Repository metrics:
 {metrics}
 
@@ -109,9 +112,17 @@ recommendations (array)
 
 Return JSON only. No explanation.
 """)
-        ])
+            ])
 
-        self.chain = self.prompt | self.llm
+            self.chain = self.prompt | self.llm
+        except Exception as exc:
+            # Any Groq init failure disables AI reasoning but keeps API alive.
+            if GroqError is not None and isinstance(exc, GroqError):
+                pass  # known missing/invalid key path; fall back silently
+            else:
+                # Optional: lightweight log for local debugging without failing CI.
+                print(f"[AIReasoningAgent] Groq init skipped: {exc}")
+            self.chain = None
 
     def analyze(self, metrics: dict):
         if self.chain is None:
