@@ -45,7 +45,7 @@ def test_analyze_returns_metrics(authed_client, monkeypatch):
     monkeypatch.setattr(
         analyze_route.requests,
         "get",
-        lambda raw_url, timeout: DummyResponse("def run():\n    return 1\n"),
+        lambda raw_url, timeout, allow_redirects=False: DummyResponse("def run():\n    return 1\n"),
     )
     monkeypatch.setattr(
         analyze_route.OrchestratorAgent,

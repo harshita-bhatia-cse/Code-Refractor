@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from backend.api.auth.jwt_manager import verify_token
+
+from backend.api.auth.jwt_manager import get_github_token, verify_token
 from backend.data.github_client import GitHubClient
+from backend.utils.url_validation import validate_github_raw_url
 
 router = APIRouter(prefix="/code", tags=["Code"])
 
@@ -12,8 +14,9 @@ def get_code(
 ):
     if not raw_url or raw_url == "undefined":
         raise HTTPException(status_code=400, detail="Invalid raw_url")
+    raw_url = validate_github_raw_url(raw_url)
 
-    github_token = payload.get("github_token")
+    github_token = get_github_token(payload)
     if not github_token:
         raise HTTPException(status_code=401, detail="Login again")
 

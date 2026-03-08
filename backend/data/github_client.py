@@ -1,5 +1,7 @@
 import requests
 
+from backend.utils.url_validation import validate_github_raw_url
+
 
 class GitHubClient:
     def __init__(self, token: str):
@@ -67,7 +69,8 @@ class GitHubClient:
     # Get raw file content
     # --------------------------------------------------
     def get_file_content(self, raw_url: str):
-        resp = requests.get(raw_url, headers=self.headers)
+        safe_url = validate_github_raw_url(raw_url)
+        resp = requests.get(safe_url, headers=self.headers, allow_redirects=False)
 
         if resp.status_code != 200:
             return {

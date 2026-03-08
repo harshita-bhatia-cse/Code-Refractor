@@ -64,8 +64,6 @@ async function loadRepos() {
     if (err.message === "UNAUTHORIZED") {
       setStatus("Session expired. Redirecting to login...", "#b91c1c");
       sessionStorage.clear();
-      localStorage.removeItem("jwt_token");
-      localStorage.removeItem("github_user");
       localStorage.removeItem("selected_repo");
       window.location.href = "index.html";
     } else {

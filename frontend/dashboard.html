@@ -16,34 +16,31 @@
 </div>
 
 <script>
-  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+  const params = new URLSearchParams(hash);
 
   if (params.get("token")) {
     const token = params.get("token");
     const user = params.get("user");
     sessionStorage.setItem("jwt_token", token);
     sessionStorage.setItem("github_user", user || "");
-    localStorage.setItem("jwt_token", token);
-    localStorage.setItem("github_user", user || "");
     history.replaceState({}, "", "dashboard.html");
   }
 
-  const activeToken = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
-  const activeUser = localStorage.getItem("github_user") || sessionStorage.getItem("github_user");
+  const activeToken = sessionStorage.getItem("jwt_token");
+  const activeUser = sessionStorage.getItem("github_user");
 
   if (!activeToken || !activeUser) {
     window.location.href = "index.html";
   } else {
     sessionStorage.setItem("jwt_token", activeToken);
     sessionStorage.setItem("github_user", activeUser);
-    localStorage.setItem("jwt_token", activeToken);
-    localStorage.setItem("github_user", activeUser);
     document.getElementById("user").innerText = activeUser;
     document.getElementById("reposBtn").disabled = false;
   }
 
   function goRepos() {
-    const token = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
+    const token = sessionStorage.getItem("jwt_token");
     if (!token) {
       window.location.href = "index.html";
       return;

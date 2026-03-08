@@ -8,6 +8,7 @@ from backend.ai_agents.orchestrator import OrchestratorAgent
 from backend.ai_agents.refractor.refractor_agent import LLMRefractorAgent
 from backend.api.auth.jwt_manager import verify_token
 from backend.api.schemas.analysis import RefactorResponse
+from backend.utils.url_validation import validate_github_raw_url
 
 router = APIRouter(prefix="/refactor", tags=["AI Refactor"])
 
@@ -26,11 +27,9 @@ def refactor_code(request: RefactorRequest, user=Depends(verify_token)):
     filename = request.filename
 
     if request.raw_url:
-        raw_url = request.raw_url.strip()
-        if not raw_url.startswith("http"):
-            raise HTTPException(status_code=400, detail="raw_url must be a valid http(s) URL")
+        raw_url = validate_github_raw_url(request.raw_url)
         try:
-            resp = requests.get(raw_url, timeout=20)
+            resp = requests.get(raw_url, timeout=20, allow_redirects=False)
             resp.raise_for_status()
             code = resp.text
             if not filename:

@@ -1,30 +1,18 @@
 // frontend/js/auth.js
 
 export function requireAuth() {
-  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+  const params = new URLSearchParams(hash);
 
-  // Save token on first redirect
   if (params.get("token")) {
     const token = params.get("token");
     const user = params.get("user");
     sessionStorage.setItem("jwt_token", token);
     sessionStorage.setItem("github_user", user || "");
-    localStorage.setItem("jwt_token", token);
-    localStorage.setItem("github_user", user || "");
-
-    history.replaceState({}, "", location.pathname);
+    history.replaceState({}, "", location.pathname + location.search);
   }
 
-  const token = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
-  const user = localStorage.getItem("github_user") || sessionStorage.getItem("github_user");
-  if (token) {
-    sessionStorage.setItem("jwt_token", token);
-    localStorage.setItem("jwt_token", token);
-  }
-  if (user) {
-    sessionStorage.setItem("github_user", user);
-    localStorage.setItem("github_user", user);
-  }
+  const token = sessionStorage.getItem("jwt_token");
 
   if (!token) {
     window.location.href = "index.html";

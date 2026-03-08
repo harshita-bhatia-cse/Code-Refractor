@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from backend.api.auth.jwt_manager import verify_token
+
+from backend.api.auth.jwt_manager import get_github_token, verify_token
 from backend.data.github_client import GitHubClient
 
 router = APIRouter(prefix="/files", tags=["Files"])
@@ -11,7 +12,7 @@ def get_files(
     path: str = Query("", description="Folder path"),
     payload: dict = Depends(verify_token)
 ):
-    github_token = payload.get("github_token")
+    github_token = get_github_token(payload)
     username = payload.get("sub")
 
     if not github_token or not username:

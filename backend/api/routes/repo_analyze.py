@@ -4,7 +4,7 @@ import tempfile
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend.ai_agents.orchestrator import OrchestratorAgent
-from backend.api.auth.jwt_manager import verify_token
+from backend.api.auth.jwt_manager import get_github_token, verify_token
 from backend.api.schemas.analysis import AnalyzeRepoResponse
 from backend.data.github_client import GitHubClient
 
@@ -16,7 +16,7 @@ def analyze_repo(repo_path: str, user=Depends(verify_token)):
     temp_dir = None
 
     try:
-        github_token = user["github_token"]
+        github_token = get_github_token(user)
         username = user["sub"]
 
         temp_dir = tempfile.mkdtemp()
