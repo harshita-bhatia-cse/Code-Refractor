@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-
+from backend.utils.env import load_project_env
+from backend.api.routes.login import save_user
 from backend.api.auth.jwt_manager import (
     JWT_EXPIRES_SECONDS,
     create_oauth_state,
@@ -55,6 +56,7 @@ if missing:
 
 
 @router.get("/login")
+
 def github_login():
     state = create_oauth_state()
     query = urllib.parse.urlencode(
@@ -68,7 +70,7 @@ def github_login():
 
 
 @router.get("/callback")
-def github_callback(code: str, state: str):
+async def github_callback(code: str, state: str):
     verify_oauth_state(state)
 
     try:
@@ -110,6 +112,7 @@ def github_callback(code: str, state: str):
 
     user_data = user_response.json()
     username = user_data.get("login")
+    await save_user(user_data)
     if not username:
         raise HTTPException(status_code=400, detail="Failed to fetch GitHub user")
 
