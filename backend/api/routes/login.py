@@ -22,7 +22,6 @@ async def save_user(user):
         await users_collection.insert_one(new_user)
 
     else:
-        # Update login time when user logs in again
         await users_collection.update_one(
             {"github_id": user["id"]},
             {"$set": {"last_login": datetime.utcnow()}}
@@ -43,7 +42,6 @@ router = APIRouter(prefix="/login", tags=["Auth"])
 @router.post("/")
 async def login(username: str = Body(...)):
 
-    # Save user to MongoDB
     user_data = {
         "id": username,
         "login": username,
