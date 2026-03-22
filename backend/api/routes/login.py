@@ -1,31 +1,21 @@
-from backend.database import users_collection
-from datetime import datetime
+from backend.database import cursor, conn
 
 async def save_user(user):
     print("Saving user:", user)
 
-    existing_user = await users_collection.find_one({
-        "github_id": user["id"]
-    })
+    github_id = str(user.get("id")) if user.get("id") else user.get("login")
 
-    if not existing_user:
+    cursor.execute("""
+    INSERT OR REPLACE INTO users (github_id, email, name, avatar)
+    VALUES (?, ?, ?, ?)
+    """, (
+        github_id,
+        user.get("email"),
+        user.get("login"),
+        user.get("avatar_url")
+    ))
 
-        new_user = {
-            "github_id": user["id"],
-            "username": user["login"],
-            "email": user.get("email"),
-            "avatar": user.get("avatar_url"),
-            "created_at": datetime.utcnow(),
-            "last_login": datetime.utcnow()
-        }
-
-        await users_collection.insert_one(new_user)
-
-    else:
-        await users_collection.update_one(
-            {"github_id": user["id"]},
-            {"$set": {"last_login": datetime.utcnow()}}
-        )
+    conn.commit()
 
     return True
 
@@ -43,11 +33,11 @@ router = APIRouter(prefix="/login", tags=["Auth"])
 async def login(username: str = Body(...)):
 
     user_data = {
-        "id": username,
-        "login": username,
-        "email": None,
-        "avatar_url": None
-    }
+    "id": f"local_{username}", 
+    "login": username,
+    "email": None,
+    "avatar_url": None
+}
 
     await save_user(user_data)
 
