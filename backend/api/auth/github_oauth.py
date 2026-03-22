@@ -3,7 +3,11 @@ import urllib.parse
 import uuid
 
 import requests
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Request, HTTPException
+from fastapi import Depends
+from backend.api.auth.jwt_manager import verify_token
+from backend.api.auth.session_store import delete_session
+
 from fastapi.responses import RedirectResponse
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -15,14 +19,13 @@ from backend.api.auth.jwt_manager import (
     create_token,
     verify_oauth_state,
 )
-from backend.api.auth.session_store import put_session
+from backend.api.auth.session_store import delete_session, put_session
 from backend.utils.env import load_project_env
 
 load_project_env()
 
 router = APIRouter(prefix="/auth/github", tags=["GitHub Auth"])
 
-# Requests session with mild retries to survive transient network hiccups
 _session = requests.Session()
 _session.mount(
     "https://",
@@ -37,7 +40,6 @@ _session.mount(
 )
 _session.mount("http://", _session.get_adapter("https://"))
 
-# Default timeouts: (connect, read)
 REQUEST_TIMEOUT = (10, 20)
 
 CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
@@ -60,15 +62,20 @@ if missing:
 def github_login():
     state = create_oauth_state()
     query = urllib.parse.urlencode(
-        {
-            "client_id": CLIENT_ID,
-            "scope": "repo",
-            "state": state,
-        }
+    {
+        "client_id": CLIENT_ID,
+        "scope": "repo",
+        "state": state,
+        "prompt": "login",
+        "login": "",   
+    }
     )
     return RedirectResponse(f"https://github.com/login/oauth/authorize?{query}")
 
-
+@router.post("/logout")
+async def logout(payload: dict = Depends(verify_token)):
+    delete_session(payload["sid"])
+    return {"message": "Logged out"}
 @router.get("/callback")
 async def github_callback(code: str, state: str):
     verify_oauth_state(state)

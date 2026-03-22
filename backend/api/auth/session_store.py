@@ -31,6 +31,9 @@ def get_session(session_id: str) -> Optional[dict]:
         return entry
 
 
-def delete_session(session_id: str) -> None:
-    with _LOCK:
-        _STORE.pop(session_id, None)
+# def delete_session(session_id: str) -> None:
+#     with _LOCK:
+#         _STORE.pop(session_id, None)
+def delete_session(session_id: str):
+    if session_id in sessions:
+        del sessions[session_id]
