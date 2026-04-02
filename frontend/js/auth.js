@@ -13,9 +13,12 @@ export function requireAuth() {
   }
 
   const token = sessionStorage.getItem("jwt_token");
+  const currentPage = window.location.pathname.split("/").pop();
 
   if (!token) {
-    window.location.href = "index.html";
+    if (currentPage && currentPage !== "index.html") {
+      window.location.href = "index.html";
+    }
     throw new Error("No auth token");
   }
 

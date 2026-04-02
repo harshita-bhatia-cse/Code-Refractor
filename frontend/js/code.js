@@ -24,6 +24,8 @@ let activeRawUrl = "";
 let activeFilename = "snippet.txt";
 let sourceCodeOriginal = "";
 let latestRefactoredCode = "";
+let runInProgress = false;
+let autoRunEnabled = true;
 
 function setChip(el, text, tone = "idle") {
   if (!el) return;
@@ -80,7 +82,7 @@ async function runAnalysis(rawUrl, token) {
     setChip(analysisState, "Running", "loading");
     setAnalysisText("Running AI analysis...");
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120 seconds for large analysis jobs
 
     const res = await fetch(`${API_BASE}/analyze/?raw_url=${encodeURIComponent(rawUrl)}`, {
       signal: controller.signal,
@@ -100,7 +102,7 @@ async function runAnalysis(rawUrl, token) {
   } catch (err) {
     const msg =
       err && err.name === "AbortError"
-        ? "AI analysis timed out after 20 seconds."
+        ? "AI analysis timed out after 120 seconds."
         : (err.message || String(err));
     setAnalysisText(`AI analysis failed.\n${msg}`);
     setChip(analysisState, "Failed", "error");
@@ -113,7 +115,7 @@ async function runRefactor(rawUrl, token) {
     setRefactorText("Running LLM refactor...");
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
+    const timeout = setTimeout(() => controller.abort(), 300000); // 300 seconds for heavy refactor jobs
 
     const res = await fetch(`${API_BASE}/refactor/`, {
       method: "POST",
@@ -153,7 +155,7 @@ ${Array.isArray(llm.issues) && llm.issues.length ? llm.issues.map((x, i) => `${i
   } catch (err) {
     const msg =
       err && err.name === "AbortError"
-        ? "LLM refactor request timed out after 45 seconds."
+        ? "LLM refactor request timed out after 300 seconds."
         : (err.message || String(err));
     setRefactorText(`LLM refactor failed.\n${msg}`);
     if (refactoredBox) refactoredBox.textContent = "Refactor unavailable.";
@@ -184,9 +186,19 @@ function downloadTextFile(filename, text) {
 
 async function runAll() {
   if (!activeRawUrl || !activeToken) return;
-  await loadCode(activeRawUrl);
-  await runAnalysis(activeRawUrl, activeToken);
-  await runRefactor(activeRawUrl, activeToken);
+  if (runInProgress) {
+    console.log("runAll skipped; already in progress");
+    return;
+  }
+
+  runInProgress = true;
+  try {
+    await loadCode(activeRawUrl);
+    await runAnalysis(activeRawUrl, activeToken);
+    await runRefactor(activeRawUrl, activeToken);
+  } finally {
+    runInProgress = false;
+  }
 }
 
 async function initPage() {
@@ -209,7 +221,10 @@ async function initPage() {
       return;
     }
 
-    await runAll();
+    if (autoRunEnabled) {
+      await runAll();
+      autoRunEnabled = false;
+    }
   } catch (err) {
     setRefactorText(`Initialization failed.\n${err.message || err}`);
     setChip(refactorState, "Failed", "error");

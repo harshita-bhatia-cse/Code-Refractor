@@ -1,3 +1,6 @@
+import json
+import requests
+
 from backend.api.routes import analyze as analyze_route
 from backend.api.routes import repo_analyze as repo_analyze_route
 from backend.api.routes import refactor as refactor_route
@@ -93,6 +96,48 @@ def test_refactor_inline_code(authed_client, monkeypatch):
     body = response.json()
     assert body["filename"] == "sample.json"
     assert body["llm_refactor"]["ok"] is True
+
+
+def test_make_request_retries_on_429(monkeypatch):
+    from backend.ai_agents.refractor.refractor_agent import LLMRefractorAgent
+    import backend.ai_agents.refractor.refractor_agent as refactor_module
+
+    class DummyResponse:
+        def __init__(self, status_code, content):
+            self.status_code = status_code
+            self._content = content
+
+        def raise_for_status(self):
+            if self.status_code != 200:
+                raise requests.HTTPError("error", response=self)
+
+        def json(self):
+            return json.loads(self._content)
+
+    responses = [
+        DummyResponse(429, "{}"),
+        DummyResponse(429, "{}"),
+        DummyResponse(200, '{"choices":[{"message":{"content":"{\\\"summary\\\":\\\"ok\\\",\\\"issues\\\":[],\\\"refactored_code\\\":\\\"x\\\"}"}}]}'),
+    ]
+
+    def fake_post(url, headers, json, timeout):
+        return responses.pop(0)
+
+    monkeypatch.setattr(refactor_module.requests, "post", fake_post)
+
+    agent = LLMRefractorAgent()
+    agent.api_key = "test"
+    agent.base_url = "https://api.groq.com/openai/v1"
+    agent.max_retries = 3
+    agent.retry_backoff_base = 0.0
+
+    payload = {
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "user", "content": "hello"}],
+    }
+
+    health = agent._make_request(payload)
+    assert health.status_code == 200
 
 
 def test_generate_is_not_implemented(authed_client):

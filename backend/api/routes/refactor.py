@@ -1,4 +1,5 @@
 from typing import Optional
+import asyncio
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException
@@ -47,7 +48,12 @@ def refactor_code(request: RefactorRequest, user=Depends(verify_token)):
     static_analysis = analyzer.analyze(code, filename)
 
     agent = LLMRefractorAgent()
-    llm_result = agent.refactor(code=code, filename=filename, analysis=static_analysis)
+    try:
+        llm_result = agent.refactor(code=code, filename=filename, analysis=static_analysis)
+    except asyncio.CancelledError:
+        raise HTTPException(status_code=499, detail="Client request cancelled during refactor")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Refactor invocation failed: {exc}")
 
     return {
         "filename": filename,
