@@ -5,7 +5,7 @@ AI-assisted code analysis and refactoring tool with:
 - static HTML/JS frontend
 - GitHub OAuth + JWT auth
 - rule-based multi-language metrics
-- LLM-based refactor suggestions
+- LLM-based refactor suggestions with RAG-powered context retrieval (FAISS)
 
 ## Prerequisites
 - Python 3.11+
@@ -22,6 +22,7 @@ Required keys:
 - `LLM_API_KEY`
 - `LLM_MODEL`
 - `LLM_BASE_URL`
+- (optional) `LLM_EMBED_MODEL` for RAG embeddings (default: `all-MiniLM-L6-v2`)
 
 Optional:
 - `CORS_ALLOW_ORIGINS` (comma-separated origins)
@@ -36,6 +37,11 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 ```
+
+Key runtime deps for RAG:
+- `sentence-transformers`
+- `faiss-cpu`
+- `numpy`
 
 ## Run Locally (Clean Path)
 Open two terminals from repository root.
@@ -64,7 +70,14 @@ python -m pytest -q
 2. Browse repositories and files.
 3. Run file-level analysis (`/analyze`).
 4. Run LLM refactor (`/refactor`).
+   - RAG pipeline: chunk → embed → FAISS index → retrieve relevant context → inject into LLM prompt.
 5. Optionally run repo-level analysis (`/analyze-repo`).
+
+## Recent Changes (RAG Upgrade)
+- Replaced naive character-based chunking in `LLMRefractorAgent` with a Retrieval-Augmented Generation pipeline.
+- Added `backend/ai_agents/rag/` (chunker, embedder, vector store, retriever, pipeline).
+- Prompt now includes top relevant chunks before target code to improve context and reduce tokens.
+- Added optional fallbacks (hash embeddings, numpy-less cosine) to keep runtime resilient if deps are missing.
 
 ## Notes
 - Keep `.env` private; never commit real secrets.
