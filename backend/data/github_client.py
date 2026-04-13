@@ -5,6 +5,15 @@ from urllib3.util.retry import Retry
 from backend.utils.url_validation import validate_github_raw_url
 
 
+class GitHubAPIError(Exception):
+    """Lightweight wrapper to propagate GitHub HTTP failures with status code."""
+
+    def __init__(self, status_code: int, message: str):
+        super().__init__(message)
+        self.status_code = status_code
+        self.message = message
+
+
 class GitHubClient:
     def __init__(self, token: str):
         self.headers = {
@@ -54,7 +63,7 @@ class GitHubClient:
                 url, headers=self.headers, params=page_params, timeout=self._timeout
             )
             if resp.status_code != 200:
-                raise Exception(f"GitHub API error: {resp.text}")
+                raise GitHubAPIError(resp.status_code, resp.text)
 
             chunk = resp.json()
             if not chunk:
@@ -83,7 +92,7 @@ class GitHubClient:
         resp = self._session.get(url, headers=self.headers, timeout=self._timeout)
 
         if resp.status_code != 200:
-            raise Exception(f"GitHub API error: {resp.text}")
+            raise GitHubAPIError(resp.status_code, resp.text)
 
         return resp.json()
 
@@ -122,7 +131,7 @@ class GitHubClient:
         response = self._session.get(url, headers=self.headers, timeout=self._timeout)
 
         if response.status_code != 200:
-            raise Exception(f"Failed to download repo: {response.text}")
+            raise GitHubAPIError(response.status_code, response.text)
 
         zip_path = os.path.join(save_path, "repo.zip")
 

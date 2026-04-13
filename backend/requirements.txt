@@ -20,3 +20,6 @@ typing_extensions==4.15.0
 urllib3==2.6.3
 uvicorn==0.40.0
 pytest==8.4.2
+sentence-transformers==3.0.1
+faiss-cpu==1.8.0.post1
+numpy==1.26.4
