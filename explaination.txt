@@ -1,79 +1,164 @@
+AI CODE ANALYZER + REFACTOR WORKFLOW (BRIEF)
 
-JWT Verified
-   ↓
-OrchestratorAgent.run()
-   ↓
-Engine → rule metrics
-   ↓
-AIReasoningAgent → LLM reasoning
-   ↓
-Merge
-   ↓
-Save repo_metrics.json
-   ↓
-Return structured response
+1) Auth
+   - Validate JWT.
 
+2) Analysis Path
+   - OrchestratorAgent.run(repo_path)
+   - Engine computes rule-based metrics per file.
+   - AIReasoningAgent adds LLM insights.
+   - MetricsAggregator merges results and writes backend/analysis_output/repo_metrics.json.
+   - API returns structured JSON (scores, strengths, weaknesses, recommendations).
 
+3) Refactor Path (RAG-enabled)
+   - LLMRefractorAgent receives code + filename + analysis.
+   - RAGPipeline steps:
+       a) Chunk code with overlap.
+       b) Embed chunks (sentence-transformers; hash fallback).
+       c) Index embeddings in FAISS (numpy/pure-Python fallback).
+       d) Retrieve top relevant chunks for refactoring intent.
+   - Retrieved context + target code are sent to the LLM for refactor.
+   - Response (summary, issues, refactored_code) returned to API/Frontend.
 
-
-STYLE ANALYSIS
-
-User opens repo
-        ↓
-Rule Engine calculates metrics
-        ↓
-Create summary context
-        ↓
-Send metrics + summary to LLM
-        ↓
-LLM returns structured analysis
-        ↓
-Merge rule metrics + AI insights
-        ↓
-Save to repo_metrics.json
+4) Frontend Flow
+   - User selects repo or file.
+   - POST /analyze-repo -> displays metrics and recommendations.
+   - POST /refactor -> shows LLM refactor output with issues/summary.
 
 
-GitHub Repo
-     ↓
-Engine (rule metrics)
-     ↓
-MetricsAggregator
-     ↓
-AI Reasoning Layer (LLM)
-     ↓
-Structured JSON Output
-     ↓
-Stored in repo_metrics.json
+User (Frontend UI)
+        │
+        ▼
+Select GitHub Repo / File
+        │
+        ▼
+Backend API (FastAPI)
+        │
+        ├───────────────┬────────────────
+        │               │
+        ▼               ▼
+ /analyze           /refactor
+        │               │
+        ▼               ▼
+
+------------------- ANALYSIS PIPELINE -------------------
+
+GitHubClient → Fetch Code
+        │
+        ▼
+FileScanner (scan repo files)
+        │
+        ▼
+Language Detection
+        │
+        ▼
+Analyzer Engine
+        │
+        ▼
+Metrics + Domain Classification
+        │
+        ▼
+Return Analysis JSON
 
 
-Why Groq Is Good
+------------------- REFACTOR PIPELINE -------------------
 
-✔ Extremely fast
-✔ Cheaper than OpenAI
-✔ Great Llama3 models
-✔ Works perfectly with LangChain
-✔ No NumPy issues
+Fetch Code (raw_url / input)
+        │
+        ▼
+Static Analysis (OrchestratorAgent)
+        │
+        ▼
+LLMRefractorAgent
+        │
+        ▼
+🔹 RAG PIPELINE 🔹
+   ├─ Chunk Code
+   ├─ Generate Embeddings
+   ├─ Store in FAISS
+   ├─ Retrieve Relevant Chunks
+        │
+        ▼
+Context + Target Code → Prompt Builder
+        │
+        ▼
+Groq LLaMA API (LLM)
+        │
+        ▼
+Structured JSON Response
+(summary, issues, refactored_code)
+        │
+        ▼
+Frontend Display (Refactored Code + Insights)
 
-Engine.run(repo_path)
-        ↓
-rule_metrics
-        ↓
-AIReasoningAgent.analyze(rule_metrics)
-        ↓
-ai_analysis
+📄 AI Code Analyzer + Refactor Workflow (Explanation)
+1. Authentication
+All requests are secured using JWT-based authentication.
+Ensures only authorized users can access repository analysis and refactoring features.
+2. Analysis Pipeline
+The analysis starts with OrchestratorAgent.run(repo_path), which coordinates the full pipeline.
+The Engine processes each file and computes rule-based metrics such as complexity, maintainability, and structure.
+An AI reasoning layer enhances these results by adding LLM-driven insights (e.g., code quality observations).
+A metrics aggregator consolidates all outputs and stores them in:
+backend/analysis_output/repo_metrics.json
+The API returns structured data including:
+Scores
+Strengths
+Weaknesses
+Recommendations
+
+👉 This phase provides a comprehensive understanding of code quality at repository level.
+
+3. Refactor Pipeline (RAG-enabled)
+The LLMRefractorAgent handles code refactoring using both:
+Static analysis
+Retrieved contextual information
+RAG Pipeline Steps:
+Chunking: Code is split into overlapping chunks to handle large inputs.
+Embedding: Each chunk is converted into vector representations using sentence-transformers (fallback mechanisms available).
+Vector Storage: Embeddings are indexed in FAISS for fast similarity search.
+Retrieval: Relevant chunks are retrieved based on the refactoring intent.
+
+👉 These retrieved chunks are combined with the target code and sent to the LLM.
+
+The LLM (via Groq LLaMA) generates:
+Summary
+Issues
+Refactored code
+
+👉 This ensures context-aware and high-quality refactoring, even for large files.
+
+4. Frontend Flow
+User selects a repository or file from the UI.
+Actions:
+/analyze-repo → Displays metrics and recommendations
+/refactor → Shows refactored code with explanation
+Results are rendered in a structured and user-friendly format.
 
 
-User clicks repo
-        ↓
-Frontend calls POST /analyze-repo?repo_path=repo_name
-        ↓
-Backend runs:
-    - Metrics engine
-    - AIReasoningAgent (LLM)
-        ↓
-Frontend shows:
-    - maintainability_score
-    - complexity_level
-    - strengths
-    - weaknesses
-    - recommendations
+The system follows a two-parallel pipeline architecture:
+
+1. Analysis Flow
+User → API → Orchestrator → Engine → AI Insights → Aggregation → Response
+2. Refactor Flow
+User → API → LLMRefractorAgent → RAG Pipeline → LLM → JSON Output → UI
+
+User Request
+     │
+     ▼
+FastAPI Backend
+     │
+ ┌───────────────┬───────────────┐
+ │               │               │
+ ▼               ▼               ▼
+Analysis       Refactor       Auth
+Pipeline       Pipeline       (JWT)
+ │               │
+ ▼               ▼
+Metrics       RAG + LLM
+ │               │
+ ▼               ▼
+JSON Output   Refactored Code
+     │
+     ▼
+Frontend Display
