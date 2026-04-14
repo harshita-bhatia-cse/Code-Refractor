@@ -1,61 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>Code Viewer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Code Studio - CodeRefractor</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
 
-<div class="container page-shell">
-  <h2>Code Viewer</h2>
-  <div class="action-row">
-    <button id="rerunAllBtn" class="action-btn">Rerun All</button>
-    <button id="acceptRefactorBtn" class="action-btn">Accept Refactor</button>
-    <button id="rejectRefactorBtn" class="action-btn">Reject Refactor</button>
-    <button id="downloadPatchBtn" class="action-btn">Download Patch</button>
+<body class="code-page">
+
+  <div class="code-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="code-sidebar">
+      <div class="sidebar-header">
+        <h1>AI Studio</h1>
+        <p>Code Analysis & Refactoring</p>
+      </div>
+
+      <div class="sidebar-actions">
+        <button id="rerunAllBtn" type="button" class="sidebar-btn primary">
+          <span class="btn-icon">🔄</span>
+          <span>Run All</span>
+        </button>
+        <button id="acceptRefactorBtn" type="button" class="sidebar-btn success">
+          <span class="btn-icon">✅</span>
+          <span>Accept</span>
+        </button>
+        <button id="rejectRefactorBtn" type="button" class="sidebar-btn danger">
+          <span class="btn-icon">❌</span>
+          <span>Reject</span>
+        </button>
+        <button id="downloadPatchBtn" type="button" class="sidebar-btn info">
+          <span class="btn-icon">⬇</span>
+          <span>Download</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="code-content">
+
+      <div class="code-header">
+        <h2>Code Analysis Dashboard</h2>
+        <p>AI-powered code quality analysis and refactoring</p>
+      </div>
+
+
+      <section class="quality-section">
+        <div class="section-title-bar">
+          <h3>Code Quality Score</h3>
+        </div>
+        <div class="quality-card big-card">
+          <p id="qualitySummary" class="quality-score">Analyzing your code...</p>
+          <div id="qualityBadges" class="badge-row"></div>
+        </div>
+      </section>
+
+      <!-- SOURCE CODE -->
+      <section class="code-section">
+        <div class="section-title-bar">
+          <h3>Source Code</h3>
+        </div>
+        <pre id="codeBox" class="panel-pre"></pre>
+      </section>
+
+      <section class="diff-section">
+        <div class="section-title-bar">
+          <h3>Code Comparison</h3>
+        </div>
+        <div class="diff-grid">
+          <div class="diff-card">
+            <h4>Original</h4>
+            <pre id="originalBox" class="panel-pre"></pre>
+          </div>
+          <div class="diff-card">
+            <h4>Refactored</h4>
+            <pre id="refactoredBox" class="panel-pre"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="analysis-section">
+        <div class="section-title-bar">
+          <div class="section-left">
+            <h3>AI Analysis Results</h3>
+          </div>
+          <div class="section-right">
+            <span id="analysisState" class="status-chip">Idle</span>
+            <button id="retryAnalysisBtn" class="btn-retry">Retry Analysis</button>
+          </div>
+        </div>
+        <pre id="analysisBox" class="panel-pre panel-pre-success"></pre>
+      </section>
+
+      <section class="refactor-section">
+        <div class="section-title-bar">
+          <div class="section-left">
+            <h3>LLM Refactor Suggestions</h3>
+          </div>
+          <div class="section-right">
+            <span id="refactorState" class="status-chip">Idle</span>
+            <button id="retryRefactorBtn" class="btn-retry">Retry Refactor</button>
+          </div>
+        </div>
+        <pre id="refactorBox" class="panel-pre panel-pre-info"></pre>
+      </section>
+
+    </main>
+
   </div>
 
-  <div id="qualityBox" class="quality-card">
-    <h3>Quality Score</h3>
-    <p id="qualitySummary">Waiting for analysis...</p>
-    <div id="qualityBadges" class="badge-row"></div>
-  </div>
-
-  <h3>Source Code</h3>
-  <pre id="codeBox" class="panel-pre"></pre>
-
-  <div class="diff-grid">
-    <div>
-      <h3>Original</h3>
-      <pre id="originalBox" class="panel-pre"></pre>
-    </div>
-    <div>
-      <h3>Refactored</h3>
-      <pre id="refactoredBox" class="panel-pre"></pre>
-    </div>
-  </div>
-
-  <div class="section-head">
-    <h3>AI Analysis</h3>
-    <div class="head-actions">
-      <span id="analysisState" class="status-chip">Idle</span>
-      <button id="retryAnalysisBtn" class="action-btn">Retry Analysis</button>
-    </div>
-  </div>
-  <pre id="analysisBox" class="panel-pre panel-pre-success"></pre>
-
-  <div class="section-head">
-    <h3>LLM Refactor</h3>
-    <div class="head-actions">
-      <span id="refactorState" class="status-chip">Idle</span>
-      <button id="retryRefactorBtn" class="action-btn">Retry Refactor</button>
-    </div>
-  </div>
-  <pre id="refactorBox" class="panel-pre panel-pre-info">Loading LLM status...</pre>
-</div>
-
-<script type="module" src="js/code.js?v=20260305a"></script>
-
+  <script type="module" src="js/code.js?v=20260305a"></script>
 
 </body>
+
 </html>

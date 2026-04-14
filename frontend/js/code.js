@@ -62,18 +62,26 @@ function setQuality(data) {
     .join("");
 }
 
+function updateDownloadButtonState() {
+  if (!downloadPatchBtn) return;
+  downloadPatchBtn.disabled = !sourceCodeOriginal || !latestRefactoredCode;
+}
+
 async function loadCode(rawUrl) {
   try {
     const res = await fetch(rawUrl);
     if (!res.ok) throw new Error("Failed to load code");
     const text = await res.text();
     sourceCodeOriginal = text;
-    codeBox.textContent = text;
+    if (codeBox) codeBox.textContent = text;
     if (originalBox) originalBox.textContent = text;
     if (refactoredBox) refactoredBox.textContent = "Waiting for refactor...";
+    updateDownloadButtonState();
   } catch {
-    codeBox.textContent = "Failed to load source code.";
+    if (codeBox) codeBox.textContent = "Failed to load source code.";
     if (originalBox) originalBox.textContent = "";
+    sourceCodeOriginal = "";
+    updateDownloadButtonState();
   }
 }
 
@@ -82,7 +90,7 @@ async function runAnalysis(rawUrl, token) {
     setChip(analysisState, "Running", "loading");
     setAnalysisText("Running AI analysis...");
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120 seconds for large analysis jobs
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     const res = await fetch(`${API_BASE}/analyze/?raw_url=${encodeURIComponent(rawUrl)}`, {
       signal: controller.signal,
@@ -115,7 +123,7 @@ async function runRefactor(rawUrl, token) {
     setRefactorText("Running LLM refactor...");
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 300000); // 300 seconds for heavy refactor jobs
+    const timeout = setTimeout(() => controller.abort(), 300000);
 
     const res = await fetch(`${API_BASE}/refactor/`, {
       method: "POST",
@@ -142,8 +150,10 @@ async function runRefactor(rawUrl, token) {
       refactoredBox.textContent = latestRefactoredCode || "No refactored code returned";
     }
 
+    updateDownloadButtonState();
+
     setRefactorText(
-`Status: ${ok ? "OK" : "FAILED"}
+      `Status: ${ok ? "OK" : "FAILED"}
 ${llm.error ? `Error: ${llm.error}\n` : ""}Summary:
 ${llm.summary || "No summary provided"}
 
@@ -159,6 +169,8 @@ ${Array.isArray(llm.issues) && llm.issues.length ? llm.issues.map((x, i) => `${i
         : (err.message || String(err));
     setRefactorText(`LLM refactor failed.\n${msg}`);
     if (refactoredBox) refactoredBox.textContent = "Refactor unavailable.";
+    latestRefactoredCode = "";
+    updateDownloadButtonState();
     setChip(refactorState, "Failed", "error");
   }
 }
@@ -203,6 +215,8 @@ async function runAll() {
 
 async function initPage() {
   try {
+    if (downloadPatchBtn) downloadPatchBtn.disabled = true;
+
     setChip(analysisState, "Initializing", "loading");
     setChip(refactorState, "Initializing", "loading");
     setAnalysisText("Initializing...");
@@ -254,19 +268,27 @@ if (rerunAllBtn) {
 if (acceptRefactorBtn) {
   acceptRefactorBtn.addEventListener("click", () => {
     if (!latestRefactoredCode) return;
-    codeBox.textContent = latestRefactoredCode;
+    if (codeBox) codeBox.textContent = latestRefactoredCode;
   });
 }
 
 if (rejectRefactorBtn) {
   rejectRefactorBtn.addEventListener("click", () => {
-    codeBox.textContent = sourceCodeOriginal || "";
+    if (codeBox) codeBox.textContent = sourceCodeOriginal || "";
   });
 }
 
 if (downloadPatchBtn) {
   downloadPatchBtn.addEventListener("click", () => {
-    if (!sourceCodeOriginal || !latestRefactoredCode) return;
+    if (!sourceCodeOriginal) {
+      alert("Source code is not loaded yet. Please run the analysis first.");
+      return;
+    }
+    if (!latestRefactoredCode) {
+      alert("Refactored code is not ready yet. Please run refactor first.");
+      return;
+    }
+
     const patch = generateUnifiedPatch(sourceCodeOriginal, latestRefactoredCode, activeFilename);
     downloadTextFile(`${activeFilename}.diff`, patch);
   });
