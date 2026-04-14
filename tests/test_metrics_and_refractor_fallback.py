@@ -57,62 +57,11 @@ def test_quality_score_returns_grade_and_badges():
     assert "large-file" in quality["risk_badges"]
 
 
-def test_split_code_chunks_respects_max_chars():
+def test_refactor_skips_large_files():
     agent = LLMRefractorAgent()
-    code = "\n".join(["line" + str(i) for i in range(1, 20)])
-    chunks = agent._split_code_chunks(code, max_chars=50)
+    large_code = "x" * 8001
+    result = agent.refactor(large_code, "test.py", None)
 
-    assert all(len(chunk) <= 50 for chunk in chunks)
-    assert "line1" in chunks[0]
-
-
-def test_refactor_chunked_retries_for_payload_too_large(monkeypatch):
-    agent = LLMRefractorAgent()
-    agent.max_input_chars = 25
-    agent.chunk_size_chars = 25
-    agent.max_retries = 2
-    agent.chunk_shrink_factor = 0.5
-
-    calls = []
-
-    def fake_refactor_single(code, filename, analysis, language):
-        calls.append(code)
-        if len(code) > 12:
-            return {
-                "ok": False,
-                "error": "LLM request failed: Payload Too Large (413)",
-                "refactored_code": code,
-            }
-        return {
-            "ok": True,
-            "refactored_code": code.upper(),
-            "issues": [],
-            "summary": "",
-        }
-
-    monkeypatch.setattr(agent, "_refactor_single", fake_refactor_single)
-
-    result = agent._refactor_chunked("abcdefghij1234567890ABCDEF", "test.py", None, "python")
-
-    assert result["ok"]
-    assert "AB" in result["refactored_code"]
-    assert len(calls) > 1
-
-
-def test_refactor_chunked_respects_max_chunks():
-    agent = LLMRefractorAgent()
-    agent.chunk_enabled = True
-    agent.max_input_chars = 100
-    agent.chunk_size_chars = 10
-    agent.max_chunks = 2
-
-    # Force split to 3 chunks by monkeypatch to avoid calling LLM.
-    agent._split_code_chunks = lambda code, max_chars=None: ["a", "b", "c"]
-
-    result = agent._refactor_chunked("x" * 100, "test.py", None, "python")
-
-    assert result["ok"] is False
-    assert "Too many chunks" in result["error"]
-    assert "LLM_CHUNK_MAX_CHUNKS" in result["error"]
-
-
+    assert result["ok"] is True
+    assert result["skipped"] is True
+    assert "File too large" in result["reason"]

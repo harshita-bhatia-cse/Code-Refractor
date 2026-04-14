@@ -1,10 +1,19 @@
+
 const hostname = window.location.hostname;
 
-const API_BASE =
+let API_BASE;
+
+if (
   hostname === "localhost" ||
   hostname === "127.0.0.1" ||
   hostname === "::1"
-    ? "http://127.0.0.1:8000"
-    : "https://YOUR-BACKEND-URL.onrender.com";
+) {
+  API_BASE = "http://127.0.0.1:8000";
+} else {
+  API_BASE = "https://YOUR-BACKEND-URL.onrender.com";
+}
+
+// 🔥 DEBUG LOG
+console.log("API_BASE:", API_BASE);
 
 export default API_BASE;

@@ -1,0 +1,31 @@
+Project Weekly Report
+=====================
+
+Summary:
+This project currently demonstrates a hybrid backend architecture with deterministic rule-based code analysis and an optional LLM reasoning augmentation layer. The backend computes structured quality and risk metrics, and provides UI workflows for repository browsing, file listing, and code review. However, the main code generation endpoint is missing and frontend reliability is not fully wired end-to-end.
+
+What has been worked on:
+- Implemented backend analysis logic for repository quality metrics, language detection, and structured analysis output.
+- Built a refactoring endpoint that returns structured results for inline code snippets when LLM support is available.
+- Added GitHub OAuth login support and JWT-protected API routes.
+- Created frontend pages for repository browsing, file viewing, and code display.
+- Implemented a hybrid architecture concept with optional LLM reasoning that can be disabled when credentials are missing.
+
+What is still lacking / needs implementation:
+- The `/generate` endpoint is not implemented and currently returns HTTP 501. This is the biggest missing feature, as it prevents the system from delivering its claimed multi-agent human-style code generation.
+- The frontend must be hardened so all buttons and controls reliably call the backend and reflect state changes correctly.
+- API base URL usage is inconsistent in the frontend; hardcoded URLs should be removed and replaced with centralized config.
+- There is no persistent workflow context across navigation; selected repo/path/file and analysis state should be stored in sessionStorage/localStorage.
+- The system does not clearly indicate whether LLM reasoning was applied or skipped; analysis responses should include explicit fields like `llm_reasoning_used`, `llm_model`, and `reasoning_confidence`.
+- Validation and error handling need improvement for backend output, especially around structured JSON payloads from LLMs and refactor outputs.
+- Deployment and operational readiness are incomplete: README needs exact startup/deploy commands, required environment variable documentation, and sample `.env` usage.
+
+Key recommendations:
+- Implement `/generate` with a clear agent pipeline: analyze -> plan -> synthesize -> quality gate -> path/diff output.
+- Standardize API schemas and strict validation for analysis and refactor payloads.
+- Improve frontend error/loading states and wire every control to real backend endpoints.
+- Add transparent metadata for hybrid analysis mode so users trust when AI reasoning is actually applied.
+- Document local run/deploy steps clearly and surface required environment variables.
+
+Conclusion:
+The project has a solid hybrid analysis foundation and a workable backend/frontend structure, but it remains an alpha MVP until the generation endpoint, robust API wiring, and transparent LLM application are implemented. The next priority is completing the `/generate` feature and hardening frontend/backend integration for end-to-end usability.
