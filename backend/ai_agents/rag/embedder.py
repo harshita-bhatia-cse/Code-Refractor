@@ -17,6 +17,8 @@ class Embedder:
     - Fast fallback hashing if not
     """
 
+    _MODEL_CACHE = {}
+
     def __init__(self, model_name: str | None = None):
         self.model_name = model_name or os.getenv("LLM_EMBED_MODEL", "all-MiniLM-L6-v2")
         self._model = None
@@ -24,7 +26,11 @@ class Embedder:
 
         try:
             from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(self.model_name)
+            cached_model = self._MODEL_CACHE.get(self.model_name)
+            if cached_model is None:
+                cached_model = SentenceTransformer(self.model_name)
+                self._MODEL_CACHE[self.model_name] = cached_model
+            self._model = cached_model
         except Exception:
             self._model = None
 

@@ -57,6 +57,35 @@ function setQuality(data) {
   qualityBadges.innerHTML = badges.map(b => `<span class="risk-badge">${b}</span>`).join("");
 }
 
+function inferFilename(rawUrl) {
+  if (!rawUrl) return "snippet.txt";
+  try {
+    const url = new URL(rawUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
+    return segments[segments.length - 1] || "snippet.txt";
+  } catch {
+    return "snippet.txt";
+  }
+}
+
+function updateCodeViews(code) {
+  codeBox.textContent = code;
+  originalBox.textContent = code;
+  refactoredBox.textContent = code;
+}
+
+function downloadTextFile(filename, content) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // =========================
 // LOAD CODE
 // =========================
@@ -65,6 +94,7 @@ async function loadCode(rawUrl) {
     const res = await fetch(rawUrl);
     const text = await res.text();
 
+    activeFilename = inferFilename(rawUrl);
     sourceCodeOriginal = text;
     codeBox.textContent = text;
     originalBox.textContent = text;
@@ -182,9 +212,11 @@ ${err.message}
 // MAIN FLOW
 // =========================
 async function runAll() {
+  runInProgress = true;
   await loadCode(activeRawUrl);
   await runAnalysis(activeRawUrl, activeToken);
   await runRefactor(activeRawUrl, activeToken);
+  runInProgress = false;
 }
 
 // =========================
@@ -210,5 +242,25 @@ async function initPage() {
 retryRefactorBtn?.addEventListener("click", () => runRefactor(activeRawUrl, activeToken));
 retryAnalysisBtn?.addEventListener("click", () => runAnalysis(activeRawUrl, activeToken));
 rerunAllBtn?.addEventListener("click", runAll);
+acceptRefactorBtn?.addEventListener("click", () => {
+  if (!latestRefactoredCode) return;
+  sourceCodeOriginal = latestRefactoredCode;
+  updateCodeViews(latestRefactoredCode);
+  setRefactorText("Accepted refactored code as the current version.");
+  setChip(refactorState, "Accepted", "ok");
+});
+rejectRefactorBtn?.addEventListener("click", () => {
+  if (!sourceCodeOriginal) return;
+  refactoredBox.textContent = sourceCodeOriginal;
+  setRefactorText("Rejected refactor suggestions. Restored original code.");
+  setChip(refactorState, "Rejected", "idle");
+});
+downloadPatchBtn?.addEventListener("click", () => {
+  const content = latestRefactoredCode || sourceCodeOriginal;
+  if (!content) return;
+  const filename = (activeFilename || "snippet.txt").replace(/(\.[^.]+)?$/, ".refactored$1");
+  downloadTextFile(filename, content);
+  setRefactorText(`Downloaded ${filename}`);
+});
 
 initPage();
