@@ -16,7 +16,9 @@ load_project_env()
 class LLMRefractorAgent(BaseRefractor):
     def __init__(self):
         self.api_key = os.getenv("LLM_API_KEY", "").strip()
-        self.model = os.getenv("LLM_MODEL", "llama3-8b-8192").strip()
+        
+
+        self.model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant ").strip()
         self.base_url = os.getenv(
             "LLM_BASE_URL", "https://api.groq.com/openai/v1"
         ).strip().rstrip("/")
