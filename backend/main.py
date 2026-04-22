@@ -12,7 +12,11 @@ app = FastAPI()
 frontend_url = os.getenv("FRONTEND_URL", "").strip()
 cors_env = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
 if cors_env:
-    allow_origins = [item.strip() for item in cors_env.split(",") if item.strip()]
+    # Normalize env-provided origins (people often include a trailing slash).
+    allow_origins = [item.strip().rstrip("/") for item in cors_env.split(",") if item.strip()]
+    # Still allow any localhost/127.0.0.1 port in dev to avoid surprises when
+    # Vite picks a different port (5173/5174/8080) or the user switches hosts.
+    allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 else:
     allow_origins = [
         "http://127.0.0.1:8080",
@@ -20,10 +24,14 @@ else:
     ]
     if frontend_url:
         allow_origins.append(frontend_url)
+    # Dev-friendly: Vite may choose a different port (e.g. 5173/5174),
+    # and users may open either localhost or 127.0.0.1. Allow both.
+    allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=sorted(set(allow_origins)),
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

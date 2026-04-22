@@ -3,10 +3,10 @@
 ## Overview
 Code-Refractor is a two-tier application:
 - Backend: FastAPI service for GitHub OAuth, JWT auth, repository browsing, code analysis, and LLM-based refactoring.
-- Frontend: static HTML/CSS/JS client that calls backend APIs and renders repos, files, source code, analysis, and refactor output.
+- Frontend: React (Vite) client that calls backend APIs and renders repos, files, source code, analysis, and refactor output.
 
 ## Runtime Flow
-1. User opens `frontend/index.html` and clicks GitHub login.
+1. User opens the React app (Vite dev server) and clicks GitHub login.
 2. Backend `/auth/github/login` redirects to GitHub OAuth.
 3. GitHub redirects to `/auth/github/callback`; backend exchanges code for GitHub token and issues app JWT.
 4. Frontend stores JWT and requests:

@@ -133,5 +133,5 @@ async def github_callback(code: str, state: str):
     jwt_token = create_token(user=username, session_id=session_id)
 
     fragment = urllib.parse.urlencode({"token": jwt_token, "user": username})
-    redirect_url = f"{FRONTEND_URL}/dashboard.html#{fragment}"
+    redirect_url = f"{FRONTEND_URL}/dashboard#{fragment}"
     return RedirectResponse(url=redirect_url)

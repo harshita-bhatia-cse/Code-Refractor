@@ -77,6 +77,8 @@ class GitHubClient:
         return [
             {
                 "name": repo["name"],
+                "owner": repo["owner"]["login"],
+                "full_name": repo["full_name"],
                 "private": repo["private"],
                 "url": repo["html_url"]
             }

@@ -2,7 +2,7 @@
 
 AI-assisted code analysis and refactoring tool with:
 - FastAPI backend
-- static HTML/JS frontend
+- React (Vite) frontend
 - GitHub OAuth + JWT auth
 - rule-based multi-language metrics
 - LLM-based refactor suggestions with RAG-powered context retrieval (FAISS)
@@ -18,7 +18,7 @@ Required keys:
 - `GITHUB_CLIENT_ID`
 - `GITHUB_CLIENT_SECRET`
 - `JWT_SECRET`
-- `FRONTEND_URL` (for local: `http://127.0.0.1:8080`)
+- `FRONTEND_URL` (must match the URL you open for the React app, e.g. `http://localhost:8080`)
 - `LLM_API_KEY`
 - `LLM_MODEL`
 - `LLM_BASE_URL`
@@ -51,13 +51,15 @@ Terminal 1 (backend):
 uvicorn backend.main:app --reload --port 8000
 ```
 
-Terminal 2 (frontend static server):
+Terminal 2 (frontend - React/Vite):
 ```bash
-python -m http.server 8080 --directory frontend
+cd frontend-react
+npm install
+npm run dev
 ```
 
 Open:
-- Frontend: `http://127.0.0.1:8080/index.html`
+- Frontend: the URL printed by Vite (example: `http://localhost:8080/`)
 - API docs: `http://127.0.0.1:8000/docs`
 
 ## Run Tests
