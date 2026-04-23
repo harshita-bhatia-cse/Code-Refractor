@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Repositories - CodeRefractor</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="repo-page">
+    <div class="repo-container">
+        <div class="repo-header">
+            <h1>My GitHub Repositories</h1>
+            <p>Select a repository to analyze and refactor your code</p>
+        </div>
+
+        <div class="repo-controls">
+            <button onclick="window.location.href='dashboard.html'" class="btn-back">
+                ← Back to Dashboard
+            </button>
+        </div>
+
+        <div class="repo-status-bar">
+            <span id="repoStatus" class="status-chip">Loading repositories...</span>
+            <button id="retryRepoBtn" class="retry-btn">Retry Loading</button>
+        </div>
+
+        <ul id="repoList" class="repo-list">
+            <li class="repo-item-loading">
+                <div class="loading-spinner"></div>
+                <p>Loading your repositories...</p>
+            </li>
+        </ul>
+    </div>
+
+    <script type="module" src="js/repo.js?v=20260304c"></script>
+</body>
+</html>
