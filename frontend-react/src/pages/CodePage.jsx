@@ -33,6 +33,8 @@ export function CodePage() {
   const [params] = useSearchParams();
   const rawUrl = params.get("raw_url") || "";
   const activeFilename = useMemo(() => inferFilename(rawUrl), [rawUrl]);
+  const activeRepo = localStorage.getItem("selected_repo") || sessionStorage.getItem("selected_repo") || "";
+  const activeStyleProfile = useMemo(() => loadStyleProfile(activeRepo), [activeRepo]);
 
   const [analysisState, setAnalysisState] = useState({ text: "Idle", tone: "idle" });
   const [refactorState, setRefactorState] = useState({ text: "Idle", tone: "idle" });
@@ -90,11 +92,16 @@ export function CodePage() {
     setRefactorText("Running LLM refactor...");
     try {
       const token = getToken();
+      const payload = { raw_url: rawUrl };
+      if (activeStyleProfile) {
+        payload.style_profile = activeStyleProfile;
+      }
+
       const { res, body } = await fetchJson(`${apiBase}/refactor/`, {
         method: "POST",
         timeoutMs: 30000,
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ raw_url: rawUrl }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Refactor failed");
 
@@ -122,6 +129,9 @@ export function CodePage() {
       setRefactorText(
         `Status: ${status}\n` +
           `${llm.reason ? "Reason: " + llm.reason + "\n\n" : "\n"}` +
+          `Style Profile: ${
+            activeStyleProfile ? "GitHub repository profile applied" : "inferred from current file only"
+          }\n\n` +
           `Summary:\n${llm.summary || "No summary"}\n\n` +
           `Issues:\n${(llm.issues || []).join("\n") || "None"}`
       );
@@ -287,5 +297,21 @@ export function CodePage() {
       </div>
     </div>
   );
+}
+
+function loadStyleProfile(repo) {
+  if (!repo) return null;
+
+  const rawProfile =
+    sessionStorage.getItem(`style_profile:${repo}`) ||
+    localStorage.getItem(`style_profile:${repo}`);
+
+  if (!rawProfile) return null;
+
+  try {
+    return JSON.parse(rawProfile);
+  } catch {
+    return null;
+  }
 }
 

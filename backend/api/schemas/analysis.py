@@ -24,10 +24,14 @@ class LLMRefactorResult(BaseModel):
     language: str
     filename: str
     error: Optional[str] = None
+    fallback: bool = False
+    skipped: bool = False
+    reason: Optional[str] = None
     summary: str
     issues: List[str]
     refactored_code: str
     raw_output: Optional[str] = None
+    style_profile: Optional[Dict[str, Any]] = None
 
 
 class RefactorResponse(BaseModel):

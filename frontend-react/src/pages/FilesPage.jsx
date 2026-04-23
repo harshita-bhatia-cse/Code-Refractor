@@ -85,7 +85,24 @@ export function FilesPage() {
       if (!res.ok) throw new Error(typeof body === "string" ? body : "AI analysis failed");
 
       const ai = body?.result?.ai_analysis;
+      const styleProfile = body?.result?.style_profile;
       if (!ai) throw new Error("Unexpected analyze-repo response format.");
+
+      if (styleProfile) {
+        localStorage.setItem(`style_profile:${repo}`, JSON.stringify(styleProfile));
+        sessionStorage.setItem(`style_profile:${repo}`, JSON.stringify(styleProfile));
+      }
+
+      const styleHtml = styleProfile
+        ? `
+        <h3>Detected Coding Style</h3>
+        <p><b>Naming:</b> ${styleProfile.naming}</p>
+        <p><b>Indentation:</b> ${styleProfile.indentation}</p>
+        <p><b>Comments:</b> ${styleProfile.comments}</p>
+        <p><b>Structure:</b> ${styleProfile.structure}</p>
+        <p><b>Function Style:</b> ${styleProfile.function_style}</p>
+      `
+        : "";
 
       const html = `
         <h3>🤖 AI Repository Analysis</h3>
@@ -101,6 +118,8 @@ export function FilesPage() {
 
         <p><b>Recommendations:</b></p>
         <ul>${(ai.recommendations || []).map((r) => `<li>${r}</li>`).join("")}</ul>
+
+        ${styleHtml}
       `;
 
       setLlmHtml(html);
