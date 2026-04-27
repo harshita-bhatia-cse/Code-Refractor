@@ -42,10 +42,11 @@ def analyze_repo(
         downloaded_paths = []
 
         for index, repository in enumerate(repo_names):
+            owner, repo_name = _resolve_repository(repository, username)
             target_dir = temp_dir if len(repo_names) == 1 else os.path.join(temp_dir, f"repo-{index}")
             if len(repo_names) > 1:
                 os.makedirs(target_dir, exist_ok=True)
-            client.download_repo(username, repository, target_dir)
+            client.download_repo(owner, repo_name, target_dir)
             downloaded_paths.append(target_dir)
 
         agent = OrchestratorAgent()
@@ -78,3 +79,19 @@ def _requested_repositories(
     if repo_path:
         return [repo_path]
     return []
+
+
+def _resolve_repository(repository: str, default_owner: str) -> tuple[str, str]:
+    value = (repository or "").strip().strip("/")
+    if not value:
+        raise HTTPException(status_code=400, detail="Repository cannot be empty.")
+
+    if "/" in value:
+        owner, repo_name = value.split("/", 1)
+        owner = owner.strip()
+        repo_name = repo_name.strip()
+        if not owner or not repo_name:
+            raise HTTPException(status_code=400, detail=f"Invalid repository format: {repository}")
+        return owner, repo_name
+
+    return default_owner, value

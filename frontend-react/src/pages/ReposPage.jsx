@@ -68,9 +68,17 @@ export function ReposPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function openRepo(name) {
-    sessionStorage.setItem("selected_repo", name);
-    localStorage.setItem("selected_repo", name);
+  function openRepo(repo) {
+    const repoName = repo?.name || "";
+    const repoOwner = repo?.owner || "";
+    const repoFullName = repo?.full_name || (repoOwner && repoName ? `${repoOwner}/${repoName}` : repoName);
+
+    sessionStorage.setItem("selected_repo", repoName);
+    localStorage.setItem("selected_repo", repoName);
+    sessionStorage.setItem("selected_repo_owner", repoOwner);
+    localStorage.setItem("selected_repo_owner", repoOwner);
+    sessionStorage.setItem("selected_repo_full_name", repoFullName);
+    localStorage.setItem("selected_repo_full_name", repoFullName);
     navigate("/files");
   }
 
@@ -134,7 +142,7 @@ export function ReposPage() {
               <button
                 key={repo?.full_name || repo?.name}
                 className="repo-card"
-                onClick={() => openRepo(repo.name)}
+                onClick={() => openRepo(repo)}
               >
                 <div className="repo-card__top">
                   <div className="repo-card__name">

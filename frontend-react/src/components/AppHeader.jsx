@@ -24,6 +24,11 @@ export function AppHeader({ title, subtitle, rightSlot }) {
     } finally {
       clearAuth();
       localStorage.removeItem("selected_repo");
+      localStorage.removeItem("selected_repo_owner");
+      localStorage.removeItem("selected_repo_full_name");
+      sessionStorage.removeItem("selected_repo");
+      sessionStorage.removeItem("selected_repo_owner");
+      sessionStorage.removeItem("selected_repo_full_name");
       setLoggingOut(false);
       navigate("/", { replace: true });
     }

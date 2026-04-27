@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getToken, getUser } from "../lib/auth.js";
+import { getUser } from "../lib/auth.js";
 import { AppHeader } from "../components/AppHeader.jsx";
 
 export function DashboardPage() {
@@ -37,7 +37,7 @@ export function DashboardPage() {
               <button
                 className={`btn btn--primary ${loadingRepos ? "is-loading" : ""}`}
                 onClick={goRepos}
-                disabled={!getToken() || loadingRepos}
+                disabled={loadingRepos}
               >
                 {loadingRepos ? "Opening…" : "View repositories"}
               </button>

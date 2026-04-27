@@ -8,7 +8,21 @@ import { AppHeader } from "../components/AppHeader.jsx";
 export function FilesPage() {
   const navigate = useNavigate();
   const apiBase = useMemo(() => getApiBase(), []);
-  const repo = localStorage.getItem("selected_repo") || sessionStorage.getItem("selected_repo") || "";
+  const storedRepo =
+    localStorage.getItem("selected_repo") || sessionStorage.getItem("selected_repo") || "";
+  const storedFullName =
+    localStorage.getItem("selected_repo_full_name") ||
+    sessionStorage.getItem("selected_repo_full_name") ||
+    "";
+  const storedOwner =
+    localStorage.getItem("selected_repo_owner") || sessionStorage.getItem("selected_repo_owner") || "";
+
+  const [fullOwnerFromStored, fullRepoFromStored] = storedFullName.includes("/")
+    ? storedFullName.split("/", 2)
+    : ["", ""];
+  const repo = storedRepo || fullRepoFromStored;
+  const repoOwner = storedOwner || fullOwnerFromStored;
+  const repoDisplayName = storedFullName || (repoOwner && repo ? `${repoOwner}/${repo}` : repo);
 
   const [currentPath, setCurrentPath] = useState("");
   const [filter, setFilter] = useState("");
@@ -34,9 +48,11 @@ export function FilesPage() {
 
     try {
       const token = getToken();
-      const url = nextPath
-        ? `${apiBase}/files/${encodeURIComponent(repo)}?path=${encodeURIComponent(nextPath)}`
-        : `${apiBase}/files/${encodeURIComponent(repo)}`;
+      const query = new URLSearchParams();
+      if (nextPath) query.set("path", nextPath);
+      if (repoOwner) query.set("owner", repoOwner);
+      const qs = query.toString();
+      const url = `${apiBase}/files/${encodeURIComponent(repo)}${qs ? `?${qs}` : ""}`;
 
       const { res, body } = await fetchJson(url, {
         timeoutMs: 15000,
@@ -70,8 +86,9 @@ export function FilesPage() {
 
     try {
       const token = getToken();
+      const repoPathForAnalysis = repoDisplayName || repo;
       const { res, body } = await fetchJson(
-        `${apiBase}/analyze-repo/?repo_path=${encodeURIComponent(repo)}`,
+        `${apiBase}/analyze-repo/?repo_path=${encodeURIComponent(repoPathForAnalysis)}`,
         {
           method: "POST",
           timeoutMs: 30000,
@@ -174,7 +191,7 @@ export function FilesPage() {
       <div className="app-container">
         <AppHeader
           title="Files"
-          subtitle={repo ? `Browsing ${repo}` : "Pick a repository to start browsing files."}
+          subtitle={repo ? `Browsing ${repoDisplayName}` : "Pick a repository to start browsing files."}
           rightSlot={
             <button className="btn btn--ghost" onClick={() => navigate("/repos")}>
               ← Repos
@@ -195,7 +212,7 @@ export function FilesPage() {
               <div className="section-head__right">
                 <div className="breadcrumbs" aria-label="Path breadcrumb">
                   <button className="crumb" onClick={() => loadFiles("")} disabled={loadingFiles}>
-                    {repo || "root"}
+                    {repoDisplayName || repo || "root"}
                   </button>
                   {crumbs.map((c, idx) => {
                     const path = crumbs.slice(0, idx + 1).join("/");

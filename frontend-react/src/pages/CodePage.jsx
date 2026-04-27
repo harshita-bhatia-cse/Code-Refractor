@@ -258,22 +258,24 @@ export function CodePage() {
             </div>
           </section>
 
-          <section className="code-section">
+          <section className="compare-section">
             <div className="section-title-bar">
-              <h3>Original Code</h3>
+              <h3>Code Comparison</h3>
             </div>
-            <pre id="originalBox" className="panel-pre">
-              {sourceCodeOriginal || "Loading code..."}
-            </pre>
-          </section>
-
-          <section className="diff-section">
-            <div className="section-title-bar">
-              <h3>Refactored Code</h3>
+            <div className="compare-grid">
+              <div className="compare-panel">
+                <div className="compare-panel-title">Original Code</div>
+                <pre id="originalBox" className="panel-pre">
+                  {sourceCodeOriginal || "Loading code..."}
+                </pre>
+              </div>
+              <div className="compare-panel">
+                <div className="compare-panel-title">Refactored Code</div>
+                <pre id="refactoredBox" className="panel-pre panel-pre-success">
+                  {refactoredCode || "Waiting for refactor..."}
+                </pre>
+              </div>
             </div>
-            <pre id="refactoredBox" className="panel-pre panel-pre-success">
-              {refactoredCode || "Waiting for refactor..."}
-            </pre>
           </section>
 
           <section className="analysis-section">
