@@ -101,6 +101,11 @@ async def refactor_code(request: RefactorRequest, user=Depends(verify_token)):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Refactor invocation failed: {exc}")
 
+    if llm_result.get("refactored_code") is None:
+        llm_result["refactored_code"] = code
+        llm_result["summary"] = "No changes made to the code due to an error or no suggestions."
+        llm_result["issues"].append("No refactoring suggestions were provided.")
+
     return {
         "filename": filename,
         "analysis": static_analysis,

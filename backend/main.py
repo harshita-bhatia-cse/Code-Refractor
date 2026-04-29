@@ -11,11 +11,9 @@ app = FastAPI()
 
 frontend_url = os.getenv("FRONTEND_URL", "").strip()
 cors_env = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+
 if cors_env:
-    # Normalize env-provided origins (people often include a trailing slash).
     allow_origins = [item.strip().rstrip("/") for item in cors_env.split(",") if item.strip()]
-    # Still allow any localhost/127.0.0.1 port in dev to avoid surprises when
-    # Vite picks a different port (5173/5174/8080) or the user switches hosts.
     allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 else:
     allow_origins = [
@@ -24,8 +22,7 @@ else:
     ]
     if frontend_url:
         allow_origins.append(frontend_url)
-    # Dev-friendly: Vite may choose a different port (e.g. 5173/5174),
-    # and users may open either localhost or 127.0.0.1. Allow both.
+
     allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 
 app.add_middleware(
@@ -37,7 +34,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# routers
+# =========================
+# 🔥 ROUTERS (existing)
+# =========================
 from backend.api.auth.github_oauth import router as github_router
 from backend.api.routes.repos import router as repos_router
 from backend.api.routes.files import router as files_router
@@ -49,7 +48,6 @@ app.include_router(repos_router)
 app.include_router(files_router)
 app.include_router(code_router)
 app.include_router(profile_router)
-
 
 from backend.api.routes import analyze
 app.include_router(analyze.router)
@@ -63,6 +61,24 @@ app.include_router(refactor.router)
 from backend.api.routes import generate
 app.include_router(generate.router)
 
-# from backend.api.routes import agent
-# app.include_router(agent.router)
+# =========================
+# ✅ ADD THIS (IF YOU CREATED UPDATE API)
+# =========================
+# from backend.api.routes.update_file import router as update_file_router
+# app.include_router(update_file_router)
 
+
+# =========================
+# ✅ ADD THIS (HEALTH CHECK)
+# =========================
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+# =========================
+# ✅ ADD THIS (ROOT ROUTE)
+# =========================
+@app.get("/")
+def root():
+    return {"message": "Code Refractor Backend Running 🚀"}

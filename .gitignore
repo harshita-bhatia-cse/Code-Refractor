@@ -1,63 +1,45 @@
-# -----------------------------
 # 🔐 Environment Variables
-# -----------------------------
 .env
 backend/.env
 
-# -----------------------------
+# 📦 Node
+node_modules/
+
 # 🐍 Virtual Environment
-# -----------------------------
 venv/
 .venv/
 env/
 
-# -----------------------------
 # 🧠 Python Cache
-# -----------------------------
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.sqlite3
 
-# -----------------------------
-# 📊 Analysis Output (Your AI metrics)
-# -----------------------------
+# 🗄️ Database
+*.db
+
+# 📊 Analysis Output
 backend/analysis_output/
 analysis_output/
 
-# -----------------------------
 # 📁 Logs
-# -----------------------------
 *.log
 logs/
 
-# -----------------------------
 # 🖥 OS Files
-# -----------------------------
 .DS_Store
 Thumbs.db
 
-# -----------------------------
 # 💻 Editors / IDE
-# -----------------------------
 .vscode/
 .idea/
 
-# -----------------------------
-# 📦 Build / Distribution
-# -----------------------------
+# 📦 Build
 build/
 dist/
 *.egg-info/
 
-# -----------------------------
-# 📄 Temporary / Notes
-# -----------------------------
+# 📄 Temp Files
 explaination.txt
-
-# -----------------------------
-# 🗄️ Database
-# -----------------------------
-app.db
-*.db
+report.txt
