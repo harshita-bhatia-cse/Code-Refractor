@@ -1,4 +1,4 @@
-from backend.utils.env import load_project_env
+from .utils.env import load_project_env
 
 load_project_env()
 
