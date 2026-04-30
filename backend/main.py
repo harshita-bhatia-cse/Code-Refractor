@@ -42,12 +42,14 @@ from backend.api.routes.repos import router as repos_router
 from backend.api.routes.files import router as files_router
 from backend.api.routes.code import router as code_router
 from backend.api.routes.profile import router as profile_router
+from backend.api.routes.login import router as login_router
 
 app.include_router(github_router)
 app.include_router(repos_router)
 app.include_router(files_router)
 app.include_router(code_router)
 app.include_router(profile_router)
+app.include_router(login_router)
 
 from backend.api.routes import analyze
 app.include_router(analyze.router)
