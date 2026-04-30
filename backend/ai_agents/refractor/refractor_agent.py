@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import json
@@ -17,6 +16,7 @@ from backend.ai_agents.style.profile import StyleProfile
 
 class LLMRefractorAgent(BaseRefractor):
     def __init__(self):
+        # ✅ ENV CONFIG (FIXED)
         self.api_key = os.getenv("LLM_API_KEY", "").strip()
         self.model = os.getenv("LLM_MODEL", "llama3-8b-8192").strip()
         self.base_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
@@ -24,13 +24,19 @@ class LLMRefractorAgent(BaseRefractor):
         self.timeout_seconds = int(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
         self.max_output_tokens = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "2048"))
 
-        self.max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
+        # ✅ STRONG RETRY CONFIG
+        self.max_retries = int(os.getenv("LLM_MAX_RETRIES", "5"))
         self.retry_backoff = float(os.getenv("LLM_RETRY_BACKOFF", "2"))
 
-        self.max_direct_chars = int(os.getenv("LLM_MAX_DIRECT_CHARS", "8000"))
-        self.chunk_size_chars = int(os.getenv("LLM_CHUNK_SIZE_CHARS", "4000"))
+        self.max_direct_chars = int(os.getenv("LLM_MAX_DIRECT_CHARS", "6000"))
+        self.chunk_size_chars = int(os.getenv("LLM_CHUNK_SIZE_CHARS", "3000"))
 
         self.local_refactor = LocalStyleRefactor()
+
+        print("===== LLM CONFIG =====")
+        print("API KEY:", "SET" if self.api_key else "MISSING")
+        print("MODEL:", self.model)
+        print("BASE URL:", self.base_url)
 
     # ============================================================
     # MAIN ENTRY
@@ -39,20 +45,22 @@ class LLMRefractorAgent(BaseRefractor):
         language = detect_language(filename)
         profile = self._coerce_style_profile(style_profile)
 
+        # ❌ NO API KEY → DIRECT FALLBACK
         if not self.api_key:
             return self._local_result(language, filename, code, "Missing API key", profile)
 
         try:
             if len(code) > self.max_direct_chars:
                 return self._refactor_chunked(code, filename, analysis, language, profile)
+
             return self._refactor_single(code, filename, analysis, language, profile)
 
         except Exception as e:
-            print("🔥 LLM FAILED:", str(e))
+            print("🔥 LLM CRASH:", str(e))
             return self._local_result(language, filename, code, str(e), profile)
 
     # ============================================================
-    # REQUEST HANDLER (FIXED)
+    # 🔥 IMPROVED REQUEST HANDLER
     # ============================================================
     def _make_request(self, messages):
         url = f"{self.base_url}/chat/completions"
@@ -70,8 +78,10 @@ class LLMRefractorAgent(BaseRefractor):
             "Content-Type": "application/json",
         }
 
-        for attempt in range(self.max_retries):
+        for attempt in range(1, self.max_retries + 1):
             try:
+                print(f"🚀 LLM REQUEST ATTEMPT {attempt}")
+
                 response = requests.post(
                     url,
                     headers=headers,
@@ -79,9 +89,17 @@ class LLMRefractorAgent(BaseRefractor):
                     timeout=self.timeout_seconds,
                 )
 
+                # 🔥 HANDLE RATE LIMIT
                 if response.status_code == 429:
                     wait = self.retry_backoff ** attempt
-                    print(f"⚠️ Rate limited. Retry {attempt+1} after {wait}s")
+                    print(f"⚠️ RATE LIMITED → waiting {wait}s")
+                    time.sleep(wait)
+                    continue
+
+                # 🔥 HANDLE SERVER ERRORS
+                if response.status_code >= 500:
+                    wait = self.retry_backoff ** attempt
+                    print(f"⚠️ SERVER ERROR {response.status_code} → retrying in {wait}s")
                     time.sleep(wait)
                     continue
 
@@ -90,14 +108,14 @@ class LLMRefractorAgent(BaseRefractor):
 
             except requests.exceptions.RequestException as e:
                 wait = self.retry_backoff ** attempt
-                print(f"⚠️ Network error: {e}. Retrying in {wait}s")
+                print(f"⚠️ NETWORK ERROR: {e} → retrying in {wait}s")
                 time.sleep(wait)
 
-        print("⚠️ LLM failed completely → returning None")
+        print("❌ LLM FAILED AFTER RETRIES")
         return None
 
     # ============================================================
-    # SINGLE REFACTOR (FIXED)
+    # 🔥 SINGLE REFACTOR (ROBUST)
     # ============================================================
     def _refactor_single(self, code, filename, analysis, language, profile):
 
@@ -107,58 +125,59 @@ class LLMRefractorAgent(BaseRefractor):
 
         response = self._make_request(messages)
 
-        # 🔥 HANDLE FAILURE
+        # ❌ HARD FAIL → FALLBACK
         if response is None:
-            return self._local_result(language, filename, code, "LLM failed (rate limit)", profile)
+            return self._local_result(
+                language,
+                filename,
+                code,
+                "LLM unavailable (rate limit or network)",
+                profile
+            )
 
-        content = response.json()["choices"][0]["message"]["content"]
+        try:
+            content = response.json()["choices"][0]["message"]["content"]
+        except Exception:
+            return self._local_result(language, filename, code, "Invalid LLM response", profile)
 
         print("🔥 RAW LLM RESPONSE:\n", content)
 
         parsed = self._parse_json(content)
 
-        refactored = None
-        if parsed:
-            refactored = parsed.get("refactored_code")
+        refactored = parsed.get("refactored_code") if parsed else None
 
-        # 🔥 FIX OBJECT RESPONSE → STRING
+        # 🔥 FIX OBJECT → STRING
         if isinstance(refactored, dict):
-            print("⚠️ LLM returned object → converting to string")
-            try:
-                refactored = "\n".join(refactored.keys())
-            except:
-                refactored = None
+            refactored = "\n".join(refactored.keys())
 
-        # 🔥 RETRY IF EMPTY
-        if not refactored or not isinstance(refactored, str) or refactored.strip() == "":
-            print("⚠️ LLM returned invalid → retrying")
+        # 🔥 RETRY IF BAD OUTPUT
+        if not refactored or not isinstance(refactored, str):
+            print("⚠️ BAD OUTPUT → retrying once")
 
             retry_messages = [
                 {
                     "role": "system",
-                    "content": (
-                        "Return ONLY valid code as STRING.\n"
-                        "Do NOT return object.\n"
-                        "Always return full working code."
-                    )
+                    "content": "Return ONLY valid code string. No JSON. No object."
                 },
                 {
                     "role": "user",
-                    "content": f"Rewrite into full working code:\n\n{code}"
+                    "content": code
                 }
             ]
 
             response = self._make_request(retry_messages)
 
             if response:
-                content = response.json()["choices"][0]["message"]["content"]
-                parsed_retry = self._parse_json(content)
-                refactored = parsed_retry.get("refactored_code") if parsed_retry else None
+                try:
+                    content = response.json()["choices"][0]["message"]["content"]
+                    refactored = content.strip()
+                except:
+                    refactored = None
 
-        # 🔥 FINAL SAFETY
+        # 🔥 FINAL FALLBACK
         if not refactored:
-            print("⚠️ Using fallback local refactor")
-            refactored = self.local_refactor.refactor(code, language, profile)
+            print("⚠️ USING LOCAL FALLBACK")
+            return self._local_result(language, filename, code, "LLM output invalid", profile)
 
         return {
             "ok": True,
@@ -219,9 +238,9 @@ class LLMRefractorAgent(BaseRefractor):
             try:
                 start = text.find("{")
                 end = text.rfind("}")
-                return json.loads(text[start:end+1])
+                return json.loads(text[start:end + 1])
             except:
-                return None
+                return {}
 
     def _coerce_style_profile(self, sp):
         if isinstance(sp, StyleProfile):
@@ -230,6 +249,9 @@ class LLMRefractorAgent(BaseRefractor):
             return StyleProfile(**sp)
         return StyleProfile()
 
+    # ============================================================
+    # 🔥 IMPROVED FALLBACK MESSAGE
+    # ============================================================
     def _local_result(self, language, filename, code, reason, profile):
         return {
             "ok": True,
@@ -238,14 +260,14 @@ class LLMRefractorAgent(BaseRefractor):
             "reason": reason,
             "language": language,
             "filename": filename,
-            "summary": "Fallback used",
+            "summary": "⚠️ LLM unavailable — fallback used",
             "issues": [],
             "refactored_code": self.local_refactor.refactor(code, language, profile),
             "style_profile": profile.model_dump(),
         }
 
     def _split_code_chunks(self, code, size):
-        return [code[i:i+size] for i in range(0, len(code), size)]
+        return [code[i:i + size] for i in range(0, len(code), size)]
 
     # ============================================================
     # PROMPT
@@ -256,10 +278,9 @@ class LLMRefractorAgent(BaseRefractor):
                 "role": "system",
                 "content": (
                     "You are an expert software engineer.\n"
-                    "Refactor and improve code.\n"
-                    "Return ONLY JSON.\n"
-                    "refactored_code MUST be a STRING.\n"
-                    "Never return object or null."
+                    "Refactor code for readability.\n"
+                    "Return ONLY JSON with:\n"
+                    "summary, issues, refactored_code (STRING).\n"
                 )
             },
             {
