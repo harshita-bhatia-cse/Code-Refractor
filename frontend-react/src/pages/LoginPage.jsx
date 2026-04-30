@@ -11,11 +11,13 @@ export function LoginPage() {
   useEffect(() => {
     const ingested = ingestAuthFromHash();
     const token = getToken();
+    console.log("Token:", token);
+    console.log("API URL:", apiBase);
     if (token) {
-      // If we just ingested from hash, land on dashboard.
-      if (ingested.didIngest) navigate("/dashboard", { replace: true });
+      // If we just ingested from hash, land on repos directly.
+      if (ingested.didIngest) navigate("/repos", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, apiBase]);
 
   function onLogin() {
     setLoading(true);

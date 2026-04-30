@@ -133,5 +133,7 @@ async def github_callback(code: str, state: str):
     jwt_token = create_token(user=username, session_id=session_id)
 
     fragment = urllib.parse.urlencode({"token": jwt_token, "user": username})
-    redirect_url = f"{FRONTEND_URL}/repos#{fragment}"
+    # Redirect to frontend root so the SPA can ingest token from hash
+    # and navigate to protected routes without server-side /repos rewrite issues.
+    redirect_url = f"{FRONTEND_URL}/#{fragment}"
     return RedirectResponse(url=redirect_url)

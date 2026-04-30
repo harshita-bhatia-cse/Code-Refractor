@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getApiBase } from "../config.js";
-import { getToken } from "../lib/auth.js";
-import { fetchJson } from "../lib/http.js";
+import { clearAuth, getToken } from "../lib/auth.js";
+import { fetchJsonWithAuth } from "../lib/http.js";
 import { AppHeader } from "../components/AppHeader.jsx";
 
 export function FilesPage() {
@@ -48,16 +48,16 @@ export function FilesPage() {
 
     try {
       const token = getToken();
+      console.log("Token:", token);
+      console.log("API URL:", apiBase);
       const query = new URLSearchParams();
       if (nextPath) query.set("path", nextPath);
       if (repoOwner) query.set("owner", repoOwner);
       const qs = query.toString();
       const url = `${apiBase}/files/${encodeURIComponent(repo)}${qs ? `?${qs}` : ""}`;
 
-      const { res, body } = await fetchJson(url, {
-        timeoutMs: 15000,
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const { res, body } = await fetchJsonWithAuth(url, { timeoutMs: 15000 });
+      if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (!res.ok) throw new Error("Failed to fetch files");
 
       setItems(Array.isArray(body) ? body : []);
@@ -67,10 +67,16 @@ export function FilesPage() {
         }.`
       );
     } catch (err) {
+      if (err?.message === "UNAUTHORIZED") {
+        clearAuth();
+        navigate("/", { replace: true });
+        return;
+      }
       const msg =
         err?.name === "AbortError"
           ? "File request timed out after 15 seconds."
           : "Failed to load files.";
+      console.error("Files API error:", err);
       setFileStatus(msg);
       setFileStatusColor("#b91c1c");
       setItems([]);
@@ -86,18 +92,20 @@ export function FilesPage() {
 
     try {
       const token = getToken();
+      console.log("Token:", token);
+      console.log("API URL:", apiBase);
       const repoPathForAnalysis = repoDisplayName || repo;
-      const { res, body } = await fetchJson(
+      const { res, body } = await fetchJsonWithAuth(
         `${apiBase}/analyze-repo/?repo_path=${encodeURIComponent(repoPathForAnalysis)}`,
         {
           method: "POST",
           timeoutMs: 30000,
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
       );
+      if (res.status === 401) throw new Error("UNAUTHORIZED");
 
       if (!res.ok) throw new Error(typeof body === "string" ? body : "AI analysis failed");
 
@@ -141,10 +149,16 @@ export function FilesPage() {
 
       setLlmHtml(html);
     } catch (err) {
+      if (err?.message === "UNAUTHORIZED") {
+        clearAuth();
+        navigate("/", { replace: true });
+        return;
+      }
       const msg =
         err?.name === "AbortError"
           ? "AI analysis timed out after 30 seconds."
           : `AI analysis failed: ${err?.message || String(err)}`;
+      console.error("Analyze repo API error:", err);
       setLlmIsError(true);
       setLlmHtml(`<p>${msg}</p>`);
     } finally {

@@ -1,3 +1,5 @@
+import { getToken } from "./auth.js";
+
 export async function fetchJson(url, { timeoutMs = 15000, ...init } = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -10,5 +12,14 @@ export async function fetchJson(url, { timeoutMs = 15000, ...init } = {}) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function fetchJsonWithAuth(url, init = {}) {
+  const token = getToken();
+  const headers = {
+    ...(init.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+  return fetchJson(url, { ...init, headers });
 }
 

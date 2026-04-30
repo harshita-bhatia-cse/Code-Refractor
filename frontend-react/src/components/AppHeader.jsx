@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getApiBase } from "../config.js";
 import { clearAuth, getToken, getUser } from "../lib/auth.js";
-import { fetchJson } from "../lib/http.js";
+import { fetchJsonWithAuth } from "../lib/http.js";
 
 export function AppHeader({ title, subtitle, rightSlot }) {
   const navigate = useNavigate();
@@ -12,12 +12,13 @@ export function AppHeader({ title, subtitle, rightSlot }) {
 
   async function logout() {
     const token = getToken();
+    console.log("Token:", token);
+    console.log("API URL:", apiBase);
     setLoggingOut(true);
     try {
-      await fetchJson(`${apiBase}/auth/github/logout`, {
+      await fetchJsonWithAuth(`${apiBase}/auth/github/logout`, {
         method: "POST",
         timeoutMs: 15000,
-        headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
       // If backend is down, we still clear local auth.

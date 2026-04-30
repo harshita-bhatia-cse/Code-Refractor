@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getApiBase } from "../config.js";
-import { getToken } from "../lib/auth.js";
-import { fetchJson } from "../lib/http.js";
+import { clearAuth, getToken } from "../lib/auth.js";
+import { fetchJsonWithAuth } from "../lib/http.js";
 
 function inferFilename(rawUrl) {
   if (!rawUrl) return "snippet.txt";
@@ -65,10 +65,13 @@ export function CodePage() {
     setAnalysisState({ text: "Running", tone: "loading" });
     try {
       const token = getToken();
-      const { res, body } = await fetchJson(
+      console.log("Token:", token);
+      console.log("API URL:", apiBase);
+      const { res, body } = await fetchJsonWithAuth(
         `${apiBase}/analyze/?raw_url=${encodeURIComponent(rawUrl)}`,
-        { timeoutMs: 15000, headers: { Authorization: `Bearer ${token}` } }
+        { timeoutMs: 15000 }
       );
+      if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (!res.ok) throw new Error("Analysis failed");
       setAnalysisText(JSON.stringify(body, null, 2));
 
@@ -81,7 +84,13 @@ export function CodePage() {
       }
 
       setAnalysisState({ text: "Completed", tone: "ok" });
-    } catch {
+    } catch (err) {
+      if (err?.message === "UNAUTHORIZED") {
+        clearAuth();
+        navigate("/", { replace: true });
+        return;
+      }
+      console.error("Analyze API error:", err);
       setAnalysisText("Analysis failed");
       setAnalysisState({ text: "Failed", tone: "error" });
     }
@@ -92,17 +101,20 @@ export function CodePage() {
     setRefactorText("Running LLM refactor...");
     try {
       const token = getToken();
+      console.log("Token:", token);
+      console.log("API URL:", apiBase);
       const payload = { raw_url: rawUrl };
       if (activeStyleProfile) {
         payload.style_profile = activeStyleProfile;
       }
 
-      const { res, body } = await fetchJson(`${apiBase}/refactor/`, {
+      const { res, body } = await fetchJsonWithAuth(`${apiBase}/refactor/`, {
         method: "POST",
         timeoutMs: 30000,
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (!res.ok) throw new Error("Refactor failed");
 
       const llm = body?.llm_refactor || {};
@@ -137,6 +149,12 @@ export function CodePage() {
       );
       setRefactorState({ text: status, tone });
     } catch (err) {
+      if (err?.message === "UNAUTHORIZED") {
+        clearAuth();
+        navigate("/", { replace: true });
+        return;
+      }
+      console.error("Refactor API error:", err);
       setRefactorText(
         `⚠️ Refactor unavailable\n\nReason:\n${err?.message || String(err)}\n\n👉 Showing original code`
       );

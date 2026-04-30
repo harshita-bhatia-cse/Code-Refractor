@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getApiBase } from "../config.js";
 import { clearAuth, getToken } from "../lib/auth.js";
-import { fetchJson } from "../lib/http.js";
+import { fetchJsonWithAuth } from "../lib/http.js";
 import { AppHeader } from "../components/AppHeader.jsx";
 
 export function ReposPage() {
@@ -22,10 +22,9 @@ export function ReposPage() {
 
     try {
       const token = getToken();
-      const { res, body } = await fetchJson(`${apiBase}/repos/`, {
-        timeoutMs: 15000,
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      console.log("Token:", token);
+      console.log("API URL:", apiBase);
+      const { res, body } = await fetchJsonWithAuth(`${apiBase}/repos/`, { timeoutMs: 15000 });
 
       if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (!res.ok) throw new Error(typeof body === "string" ? body : "Failed to load repositories.");
@@ -51,6 +50,7 @@ export function ReposPage() {
         err?.name === "AbortError"
           ? "Repository request timed out after 15 seconds."
           : "Failed to load repositories.";
+      console.error("Repos API error:", err);
       setStatus(msg);
       setStatusColor("#b91c1c");
       setRepos([]);

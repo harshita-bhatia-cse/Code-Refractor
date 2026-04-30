@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getToken, ingestAuthFromHash } from "../lib/auth.js";
+import { ingestAuthFromHash } from "../lib/auth.js";
 
 export function RequireAuth({ children }) {
   const navigate = useNavigate();
@@ -8,7 +8,8 @@ export function RequireAuth({ children }) {
 
   useEffect(() => {
     ingestAuthFromHash();
-    const token = getToken();
+    const token = sessionStorage.getItem("jwt_token") || "";
+    console.log("Token:", token);
     if (!token) {
       navigate("/", { replace: true, state: { from: location.pathname } });
     }
