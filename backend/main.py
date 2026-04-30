@@ -1,7 +1,7 @@
 from .utils.env import load_project_env
 
-load_project_env()
-
+# load_project_env()
+print("App started successfully")
 import os
 
 from fastapi import FastAPI
