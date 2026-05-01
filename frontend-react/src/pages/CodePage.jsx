@@ -59,6 +59,7 @@ export function CodePage() {
     const text = await res.text();
     setSourceCodeOriginal(text);
     setRefactoredCode("Waiting for refactor...");
+    return text;
   }
 
   async function runAnalysis() {
@@ -96,21 +97,24 @@ export function CodePage() {
     }
   }
 
-  async function runRefactor() {
+  async function runRefactor(codeOverride) {
     setRefactorState({ text: "Running", tone: "loading" });
     setRefactorText("Running LLM refactor...");
     try {
       const token = getToken();
       console.log("Token:", token);
       console.log("API URL:", apiBase);
-      const payload = { raw_url: rawUrl };
+      const currentCode = codeOverride ?? sourceCodeOriginal;
+      const payload = currentCode
+        ? { code: currentCode, filename: activeFilename }
+        : { raw_url: rawUrl, filename: activeFilename };
       if (activeStyleProfile) {
         payload.style_profile = activeStyleProfile;
       }
 
       const { res, body } = await fetchJsonWithAuth(`${apiBase}/refactor/`, {
         method: "POST",
-        timeoutMs: 30000,
+        timeoutMs: 120000,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -155,8 +159,12 @@ export function CodePage() {
         return;
       }
       console.error("Refactor API error:", err);
+      const reason =
+        err?.name === "AbortError"
+          ? "The refactor request timed out before the LLM responded. Retry the request, or reduce the file size."
+          : err?.message || String(err);
       setRefactorText(
-        `⚠️ Refactor unavailable\n\nReason:\n${err?.message || String(err)}\n\n👉 Showing original code`
+        `Refactor unavailable\n\nReason:\n${reason}\n\nShowing original code`
       );
       setRefactoredCode(sourceCodeOriginal);
       setRefactorState({ text: "Unavailable", tone: "idle" });
@@ -167,9 +175,9 @@ export function CodePage() {
     if (runningAll) return;
     setRunningAll(true);
     try {
-      await loadCode();
+      const loadedCode = await loadCode();
       await runAnalysis();
-      await runRefactor();
+      await runRefactor(loadedCode);
     } finally {
       setRunningAll(false);
     }
